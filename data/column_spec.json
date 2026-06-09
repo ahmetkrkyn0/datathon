@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "seed": 42,
+  "drop": [
+    "student_id"
+  ],
+  "target": "career_success_score",
+  "text": "mentor_feedback_text",
+  "year_raw_numeric": [
+    "application_year",
+    "graduation_year"
+  ],
+  "categorical": [
+    "department",
+    "university_tier",
+    "target_role",
+    "hobby",
+    "preferred_social_media_platform"
+  ],
+  "numeric": [
+    "application_year",
+    "age",
+    "graduation_year",
+    "cgpa",
+    "english_exam_score",
+    "attendance_rate",
+    "failed_courses_count",
+    "coding_score",
+    "problem_solving_score",
+    "data_structures_score",
+    "sql_score",
+    "machine_learning_score",
+    "backend_score",
+    "frontend_score",
+    "cloud_score",
+    "devops_score",
+    "project_quality_score",
+    "real_client_project_count",
+    "internship_count",
+    "internship_duration_months",
+    "freelance_project_count",
+    "hackathon_count",
+    "hackathon_awards",
+    "portfolio_score",
+    "github_repo_count",
+    "github_avg_stars",
+    "open_source_contribution_count",
+    "linkedin_profile_score",
+    "cv_quality_score",
+    "technical_interview_score",
+    "hr_interview_score",
+    "communication_score",
+    "teamwork_score",
+    "leadership_score",
+    "presentation_score",
+    "certification_count",
+    "bootcamp_count",
+    "applications_sent",
+    "interviews_attended"
+  ],
+  "na_columns": {
+    "internship_duration_months": "zero_flag",
+    "english_exam_score": "median_flag",
+    "github_avg_stars": "median_flag",
+    "open_source_contribution_count": "median_flag",
+    "hr_interview_score": "median_flag",
+    "linkedin_profile_score": "median_flag",
+    "portfolio_score": "median_flag"
+  },
+  "median_impute": [
+    "english_exam_score",
+    "github_avg_stars",
+    "open_source_contribution_count",
+    "hr_interview_score",
+    "linkedin_profile_score",
+    "portfolio_score"
+  ],
+  "zero_impute": [
+    "internship_duration_months"
+  ],
+  "missing_flags": [
+    "internship_duration_months_missing",
+    "english_exam_score_missing",
+    "github_avg_stars_missing",
+    "open_source_contribution_count_missing",
+    "hr_interview_score_missing",
+    "linkedin_profile_score_missing",
+    "portfolio_score_missing"
+  ],
+  "clip": [
+    0.0,
+    100.0
+  ]
+}
