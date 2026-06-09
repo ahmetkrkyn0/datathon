@@ -21,10 +21,11 @@ import pandas as pd
 # ----------------------------------------------------------------------
 # Ayarlar
 # ----------------------------------------------------------------------
-DATA_DIR = Path(__file__).parent / "data"
+ROOT = Path(__file__).resolve().parent.parent  # src/ -> proje koku
+DATA_DIR = ROOT / "data"
 TEST_PATH = DATA_DIR / "test_x.csv"
 SAMPLE_PATH = DATA_DIR / "sample_submission.csv"
-OUTPUT_PATH = Path(__file__).parent / "submission.csv"
+OUTPUT_PATH = ROOT / "submissions" / "submission_random.csv"
 
 ID_COL = "student_id"
 TARGET_COL = "career_success_score"

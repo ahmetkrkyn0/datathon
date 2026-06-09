@@ -29,9 +29,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 # ----------------------------------------------------------------------
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent.parent  # src/ -> proje koku
 DATA_DIR = ROOT / "data"
-OUTPUT_PATH = ROOT / "submission.csv"
+OUTPUT_PATH = ROOT / "submissions" / "submission.csv"
 
 ID_COL = "student_id"
 TARGET = "career_success_score"
