@@ -1,0 +1,22 @@
+# Datathon 2026 — pinli surumler (reproducibility, SIFIR OVERFIT omurgasi)
+# Python 3.11.4 ; SEED=42 her yerde ; internet kapali bastan sona ayni sonuc.
+
+# Cekirdek sayisal/veri
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.14.1
+pyarrow==24.0.0
+
+# Modelleme (Faz 02 anchor + Faz 06 base'ler)
+scikit-learn==1.4.2
+lightgbm==4.3.0
+catboost==1.2.10
+xgboost==2.0.3
+
+# sklearn / lightgbm calisma-zamani yardimcilari (determinizm icin pinli)
+joblib==1.4.2
+threadpoolctl==3.6.0
+
+# Faz 01 EDA raporu (grafikler)
+matplotlib==3.10.1
+seaborn==0.13.2
