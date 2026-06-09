@@ -1,0 +1,27 @@
+{
+  "utf8_byte_check": true,
+  "bom_present_handled_with": "utf-8-sig",
+  "word_len_mean": 33.172,
+  "word_len_min": 17,
+  "word_len_max": 59,
+  "char_len_mean": 273.5034,
+  "char_len_min": 143,
+  "char_len_max": 447,
+  "n_unique": 10000,
+  "pct_unique": 100.0,
+  "n_rows_with_digit": 0,
+  "word_len_mean_test": 33.0725,
+  "keyword_freq": {
+    "ancak": 5831,
+    "gelistir": 6302,
+    "potansiyel": 2041,
+    "guclu": 3097,
+    "basari": 2526,
+    "mukemmel": 468,
+    "olaganustu": 184,
+    "ustun": 74,
+    "gerekiyor": 325,
+    "eksik": 447
+  },
+  "normalization": "tr_lower (I->dotless-i, dotted-I->i); metin ve lexicon AYNI"
+}
