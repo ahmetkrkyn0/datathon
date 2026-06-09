@@ -1,0 +1,10 @@
+group,cv_mse_mean,cv_mse_std,delta_vs_anchor,kabul,note
+anchor,81.702394,2.933211,0.0,True,reproduce(anchor 81.70) ok=True
+composites,81.024366,2.703238,-0.678028,False,SPEC §5.1 kompozitler; FE tezinin cekirdegi
+composites+group_std,81.338693,2.758883,-0.363701,False,CORE + group_std
+composites+interactions,81.80563,2.883177,0.103236,False,§5.2 carpimlar — CORE main-effect'leri varken AGACA gereksiz (Guardrail 6)
+composites+totals_ratio,81.372001,2.764687,-0.330393,False,CORE + totals_ratio
+composites+year_deriv,81.223403,2.757675,-0.478991,False,CORE + year_deriv
+composites+log1p,81.14137,2.76919,-0.561024,False,tree-notr; Faz05 lineer icin parquet'te tutulur
+cat_onehot,81.767715,2.889134,0.065321,False,vs native incumbent (anchor)
+cat_oof_te,81.514972,2.740174,-0.187422,False,vs native incumbent (anchor)

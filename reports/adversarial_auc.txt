@@ -1,0 +1,4 @@
+Faz 4 nihai feature matrisi — adversarial kayma-monitoru (train=0/test=1, 5-fold LGBM-clf AUC)
+with_years    = 0.6575   (review C1: ~0.66 BEKLENEN — kovaryat-kayma dedektoru, zarar degil)
+without_years = 0.5315   (<0.60 saglikli; >0.60 -> yillar disinda yeni kayma, suclu feature incele)
+karar: OK — yil-disi <0.60
