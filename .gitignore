@@ -12,3 +12,6 @@ env/
 # Arac/edisyon onbellekleri
 .code-review-graph/
 .DS_Store
+
+# Claude Code oturum dosyalari (commit edilmez)
+.claude/
