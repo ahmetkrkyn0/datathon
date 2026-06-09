@@ -4,7 +4,7 @@
 Ham `train.csv` / `test_x.csv` kolonlarını, **tüm `fit` işlemleri yalnızca dış fold'un train parçasında yapılan**, deterministik ve sızıntısız bir `fit/transform` boru hattına dönüştürmek; eksik değerleri MNAR semantiğine uygun (kanıtlanmış count==0 çakışmasıyla) doldurmak, tipleri/kategorikleri modele hazır hâle getirmek ve tahmin sonrası `clip[0,100]` sözleşmesini kurumsallaştırmak.
 
 ## "0 Overfit" Rolü
-Bu faz, "0 Overfit" north-star'ının **mekanik kalbidir**: tek başına model seçmez ama her modelin CV'sinin güvenilirliğini belirler. Eğer bir tek istatistik (medyan, encoding ortalaması, scaler μ/σ) tüm train üzerinde hesaplanırsa, OOF tahmini valid satırını dolaylı olarak "görmüş" olur — CV iyimser çıkar, private %40 bölmesinde çöker. Bu fazın tek işi, faz 02'de kilitlenen `data/folds.parquet` şemasıyla **satır-hizalı**, fold-içi fit edilen bir transformer üretip CV ile private leaderboard arasındaki sapmayı sıfıra yaklaştırmaktır. Ayrıca yıl kolonlarının (`application_year`, `graduation_year`) ham/türetilmiş hâlde matrise sızmasını burada fiziksel olarak engelleyerek tek bilinen dağılım kaymasını öldürür.
+Bu faz, "0 Overfit" north-star'ının **mekanik kalbidir**: tek başına model seçmez ama her modelin CV'sinin güvenilirliğini belirler. Eğer bir tek istatistik (medyan, encoding ortalaması, scaler μ/σ) tüm train üzerinde hesaplanırsa, OOF tahmini valid satırını dolaylı olarak "görmüş" olur — CV iyimser çıkar, private %40 bölmesinde çöker. Bu fazın tek işi, faz 02'de kilitlenen `data/folds.parquet` şemasıyla **satır-hizalı**, fold-içi fit edilen bir transformer üretip CV ile private leaderboard arasındaki sapmayı sıfıra yaklaştırmaktır. Yıl kolonları (`application_year`, `graduation_year`) HAM SAYISAL feature olarak matriste TUTULUR (review C1: ölçülmüş kazanç +yıllar 87.91→81.69); dağılım kayması feature atarak değil Faz 02'nin recency-ağırlıklı validation'ıyla yönetilir.
 
 ## Girdiler / Çıktı Artefaktları
 **Girdiler (önceki fazlardan):**
@@ -14,7 +14,7 @@ Bu faz, "0 Overfit" north-star'ının **mekanik kalbidir**: tek başına model s
 
 **Çıktılar (sonraki fazlara):**
 - `src/preprocessing.py` — `build_preprocessor()` fonksiyonu: fold-içi `fit_transform` / `transform` sözleşmesini sağlayan sklearn `Pipeline` + `ColumnTransformer` (veya eşdeğer fonksiyonel transformer). Faz 04 (FE) ve Faz 06 (modelleme) bunu doğrudan import eder.
-- `src/cleaning.py` — `clean_raw(df)`: tip düzeltmeleri, kolon drop listesi (`student_id`, yıl kolonları), kategorik dtype atama. **İstatistik içermez** (fold-bağımsız, sızıntısız saf dönüşüm).
+- `src/cleaning.py` — `clean_raw(df)`: tip düzeltmeleri, kolon drop listesi (**yalnızca `student_id`**; yıl kolonları HAM SAYISAL TUTULUR, drop edilmez — review C1), kategorik dtype atama. **İstatistik içermez** (fold-bağımsız, sızıntısız saf dönüşüm).
 - `src/postprocess.py` — `clip_predictions(pred)`: `np.clip(pred, 0, 100)` + clip-dışı değer görürse `assert` ile hata fırlatan submission koruyucu.
 - Kolon manifesti: `data/column_spec.json` — hangi kolon sayısal / kategorik / drop / NA-flag, ve her NA kolonu için doldurma stratejisi (`zero_flag` vs `median_flag`); deterministik liste (hardcode değil, türetilmiş ama versiyonlanmış).
 - Sözleşme: her base model bu transformer'ın çıktısını alır; `fit` çağrıları **yalnızca** dış-fold train indeksinde.
@@ -27,7 +27,7 @@ Bu faz, "0 Overfit" north-star'ının **mekanik kalbidir**: tek başına model s
 
 ### 2. Kolon drop & tip düzeltmeleri (`clean_raw`, istatistiksiz)
 - **DROP — `student_id`**: STU_xxxxxx sentetik anahtar, non-predictive, sıra-ezberi riski (leakageRules: ID/SATIR-SIRASI). Submission için ayrı saklanır, matrise girmez.
-- **DROP — `application_year`, `graduation_year`**: ham yıl YASAK (adversarial AUC yıllarla 0.664, yıllarsız 0.491). lockedDecisions: yıl kolonları → tek dağılım kaymasını öldürmek için fiziksel drop. (`years_since_graduation` gibi shift-invariant türev YALNIZCA Faz 04'te denenebilir ve adversarial AUC ~0.5 teyidi gerektirir; bu fazda üretilmez.)
+- **TUT — `application_year`, `graduation_year` (HAM SAYISAL, review C1):** drop YOK. Yıllar `float64` sayısal feature olarak matriste kalır (ölçülmüş kazanç: +yıllar CV 87.91→81.69, recency-proxy 101.1→92.8). Adversarial AUC (yıllarla 0.66) bir **kovaryat-kayma dedektörüdür, zarar dedektörü değil**; tüm test yıl değerleri train'de mevcut, public/private aynı test setinin rastgele bölmeleri. Kayma feature atarak değil Faz 02 recency-ağırlıklı OOF-MSE + simetrik gap ile yönetilir. (`years_since_graduation` gibi yıl-türevi Faz 04'te denenebilir; 0.25*std kabul kapısından geçer.)
 - **Kategorik dtype**: `department` (7 seviye), `university_tier` (4), `target_role` (11), `hobby` (8), `preferred_social_media_platform` (6) → `astype('category')`. `university_tier` ordinal görünse de doğal sıra belirsiz; nominal kategorik bırak (LGBM/CatBoost/HistGBR split'leri keşfetsin).
 - **Sayısal**: kalan ~38 sayısal kolon `float64` (sayımlar int → float, NaN tutabilmek için). `mentor_feedback_text` → Faz 05'e devredilir, bu fazda matrise girmez (yalnızca pas-through, ayrı saklanır).
 
@@ -78,7 +78,7 @@ NA'li 7 kolon (Faz 01 + bu fazda gerçek veriden teyitli sayımlar ve doldurma k
 - `SEED=42` her yerde; transformer deterministik (kolon sıralaması sabit, `category` kategori sırası sabit). Çıktı kolon adları `get_feature_names_out()` ile sabitlenir, `data/column_spec.json`'a yazılır → satır VE kolon hizası garanti.
 
 ## Kararlar & Gerekçeler
-- **Yıl kolonlarını drop > shift-invariant türev**: Türev (`years_since_graduation`) cazip ama bu fazda matristen tamamen çıkarmak en güvenli zemin; türev denemesi Faz 04'e ait ve adversarial kapısı (AUC ~0.5) gerektirir. Erken sızıntı riskini sıfırlar.
+- **Yıllar HAM SAYISAL TUTULUR (review C1) > drop**: Ölçüldü — yılları eklemek CV'yi 87.91→81.69, recency-proxy'yi 101.1→92.8 iyileştirir; atmak en değerli sinyal grubunu kaybeder. Kayma feature atarak değil validation'da (recency-ağırlıklı OOF) yönetilir. Yıl-türevi (`years_since_graduation`) Faz 04'te denenebilir (0.25*std kapısından geçerse).
 - **MNAR `0+flag` SADECE `internship_duration_months` için (kanıta dayalı ayrım)**: Doldurma stratejisi kolonun *neden* eksik olduğuna göre seçilir, kolonun "count" olmasına göre değil. `internship_duration_months` NA'lerinin **%82.14**'ü `internship_count==0` ile çakışır → gerçek yapısal sıfır. `open_source_contribution_count` ise `github_avg_stars` ile **aynı 910 satırda** eksiktir ve bu satırların **%96.81**'i aktif repo'ya sahiptir (NA-repo medyanı 4) → veri-toplama boşluğu, yapısal sıfır değil. Bir count kolonunu körü körüne `0`'a doldurmak yanlış MNAR varsayımıdır; her kolon için count==0 çakışması ayrı ölçülür.
 - **`open_source_contribution_count`: medyan+flag > 0+flag (düzeltme)**: `github_avg_stars` ile bayt-bayt aynı eksiklik maskesine sahip iki kolonu farklı doldurmak (`0` vs medyan) tutarsızlık ve sahte sinyal yaratır. İkisi de aynı veri-toplama boşluğunu paylaştığı için ikisi de fold-içi medyan + `_missing` flag alır; `_missing` flag zaten "GitHub verisi çekilmemiş" bilgisini taşır.
 - **Skor kolonlarında medyan > ortalama > model-tabanlı (KNN/IterativeImputer)**: medyan çarpıklığa dayanıklı ve deterministik; KNN/Iterative fold-içi fit'i ağırlaştırır, reproducibility ve overfit riski getirir, marjinal kazanç (0.25*cv_std kapısını geçmesi şüpheli) → elenir.
@@ -91,9 +91,9 @@ NA'li 7 kolon (Faz 01 + bu fazda gerçek veriden teyitli sayımlar ve doldurma k
 1. **FOLD-İÇİ FİT MUTLAK KURAL**: `SimpleImputer(median)`, OHE kategori öğrenme, target encoding — **hepsi yalnızca dış-fold train'inden `fit`**, valid/test'e `transform`. Hiçbir istatistik tüm train veya train+test birleşiminden hesaplanmaz. (`internship_duration_months` constant=0 istatistik içermez, fold-bağımsız.) (leakageRules madde 1.)
 2. **TARGET-ENCODING LEAK**: global mean encoding YASAK; yalnızca fold-içi OOF + Bayesian smoothing. (leakageRules madde 2.)
 3. **IMPUTATION LEAK**: medyan doldurma değeri fold-içi fit; `_missing` flag'ler fold-bağımsız (sadece `isna()`, hedefe bakmaz). MNAR varsayımı (count==0 çakışması) **hedefe değil, başka bir feature'a** bakarak doğrulandığından target leakage değildir. (leakageRules madde 4.)
-4. **YIL KOLONU LEAK**: `application_year`/`graduation_year` ham veya yıl-bazlı agregasyon YASAK; bu fazda fiziksel drop. (leakageRules madde 5.)
+4. **YIL KOLONU (review C1)**: `application_year`/`graduation_year` HAM SAYISAL feature olarak TUTULUR (drop YOK). Yıl-bazlı target-encode global yapılırsa yasak (madde 2'ye, OOF-TE'ye tabidir); ham sayısal kullanım serbest. (leakageRules madde 5 güncellendi.)
 5. **ID/SATIR-SIRASI LEAK**: `student_id` matrise asla girmez; sentetik üretim sırası ezberi engellenir. (leakageRules madde 7.)
-6. **ADVERSARIAL SİGORTA**: bu fazın çıktı matrisinde (yıl drop sonrası) train(0)/test(1) sınıflandırıcı AUC ~0.5 olmalı; AUC>0.6 ise suçlu feature (özellikle gizli yıl türevi) incelenir. (cvProtocol: ADVERSARIAL SİGORTA.)
+6. **ADVERSARIAL KAYMA-MONİTÖRÜ**: train(0)/test(1) sınıflandırıcı **yıl-dışı uzayda** AUC <0.60 olmalı (yıllar matriste olduğundan tam matris ~0.66 BEKLENEN, alarm değil). Yıl-dışı AUC>0.60 ise yıllar dışında yeni/beklenmedik kayma var demektir → incele. (cvProtocol: ADVERSARIAL SİGORTA → kayma-monitörü.)
 7. **YANLIŞ-IMPUTE SİNYAL LEAK (yeni)**: bir kolona dağılımına uymayan sabit değer (`open_source_contribution_count`'a `0`) enjekte etmek, OOF'ta görünmeyen ama private'ta farklılaşabilecek sahte bir sinyal yaratır. Doldurma kararı her NA kolonu için count==0 / eşlik-eden-kolon kanıtıyla ayrı verilir; "count → otomatik 0" sezgisi yasak.
 8. **DETERMİNİZM**: `SEED=42`, kolon sıralaması sabit, `category` kategori sırası sabit → aynı OOF tekrar üretilir (reproducibility şartı).
 
@@ -105,14 +105,14 @@ NA'li 7 kolon (Faz 01 + bu fazda gerçek veriden teyitli sayımlar ve doldurma k
 
 ## Definition of Done
 - [ ] `build_preprocessor().fit_transform(train_fold)` + `.transform(valid_fold/test)` çalışıyor, NaN bırakmıyor (clip/impute sonrası `X.isna().sum().sum()==0` — metin kolonu hariç).
-- [ ] `student_id`, `application_year`, `graduation_year` çıktı matrisinde **yok**; 7 NA kolonu için 7 `_missing` flag **var**.
+- [ ] `student_id` çıktı matrisinde **yok**; `application_year`/`graduation_year` HAM SAYISAL **var** (review C1); 7 NA kolonu için 7 `_missing` flag **var**.
 - [ ] Yalnızca `internship_duration_months` `0` ile dolduruluyor (`zero_flag`); diğer 6 NA kolonu (`open_source_contribution_count` dâhil) fold-içi medyanla dolduruluyor (`median_flag`).
 - [ ] `open_source_contribution_count`'a doldurulan değer fold'a göre değişir (medyan) ve sabit `0` DEĞİL; `_missing` maskesi `github_avg_stars`'ınkiyle birebir aynı.
-- [ ] Çıktı matrisinde adversarial train/test AUC ≤ 0.55 (yıl drop teyidi).
+- [ ] Çıktı matrisinde **yıl-dışı** adversarial train/test AUC <0.60 (kayma-monitörü; yıllı tam matris ~0.66 beklenen).
 - [ ] `clip_predictions` clip-dışı değerde `assert` fırlatıyor; clip sonrası tüm değerler `[0,100]`.
 - [ ] Determinizm: iki ardışık koşu bit-aynı çıktı verir (`SEED=42`).
 - [ ] Sızıntı testi geçer: valid-fold istatistiği train-fold'dan bağımsız üretiliyor.
-- [ ] Çıktı, Faz 06 anchor LGBM-num'a beslendiğinde ~91.6 CV MSE mertebesinde sonuç üretir (boru hattının sağlık kontrolü).
+- [ ] Çıktı, Faz 06 anchor LGBM-num'a beslendiğinde ~81.7 CV MSE mertebesinde sonuç üretir (boru hattının sağlık kontrolü; review C1).
 
 ## Riskler & Azaltım
 - **Risk: sessiz global fit (en sık leak)** → Azaltım: tüm fit'ler `ColumnTransformer` içinde, CV döngüsünde fold-train slice'ında çağrılır; kod review'da "tüm train üzerinde `.fit`" araması.
@@ -123,7 +123,7 @@ NA'li 7 kolon (Faz 01 + bu fazda gerçek veriden teyitli sayımlar ve doldurma k
 - **Risk: BOM yüzünden `student_id` kolonunun bulunamaması** → Azaltım: yükleme adımında `﻿` strip + kolon listesi assert.
 
 ## Süre / Zaman Kutusu
-- **Gün 1 (9 Haz) sonu — Gün 2 (10 Haz) başı**: bu faz, Faz 02 (`folds.parquet`) hemen ardından gelir. Sızıntı-güvenli `ColumnTransformer` iskeleti **Gün 1**'de anchor LGBM-num (~91.6 CV) için zorunlu; MNAR/impute/flag ve encoding ablation altyapısı **Gün 2** FE çalışmasıyla iç içe tamamlanır. Bu faz ayrı bir tam gün almaz — Gün 1–2 boyunca tüm modelleme altyapısının temelidir.
+- **Gün 1 (9 Haz) sonu — Gün 2 (10 Haz) başı**: bu faz, Faz 02 (`folds.parquet`) hemen ardından gelir. Sızıntı-güvenli `ColumnTransformer` iskeleti **Gün 1**'de anchor LGBM-num (~81.7 CV) için zorunlu; MNAR/impute/flag ve encoding ablation altyapısı **Gün 2** FE çalışmasıyla iç içe tamamlanır. Bu faz ayrı bir tam gün almaz — Gün 1–2 boyunca tüm modelleme altyapısının temelidir.
 
 ## Çapraz Referanslar
 - **Faz 02 (Validation)**: `data/folds.parquet` şeması ve fold-içi fit sözleşmesinin kaynağı; bu faz onu tüketir.
