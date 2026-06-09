@@ -1,0 +1,7 @@
+row,kind,cv_mse_mean,cv_mse_std,delta_vs_anchor,gate_pass,note
+num_only,lgbm_matrix,81.702394,2.933211,0.0,False,anchor reproduce (locked 81.702394)
+num+lexicon,lgbm_matrix,79.252061,2.85922,-2.450333,True,Katman B (10 sozluk/yapi)
+num+txt_ridge,lgbm_matrix,77.029002,2.661722,-4.673392,True,nested-OOF tek meta-kolon
+num+txt_ridge+lexicon,lgbm_matrix,77.033677,2.730661,-4.668717,True,FULL (faz06 base matris adayi)
+txt_ridge_word_standalone,txt_standalone,147.485102,2.036693,,,"alpha=2.0, word 1-2gram (metin-tek-basina)"
+txt_ridge_char_standalone,txt_standalone,156.079153,2.922813,,,char_wb(3-5) negatif sonuc -> final pipeline'dan CIKARILDI (SPEC 05 §4)
