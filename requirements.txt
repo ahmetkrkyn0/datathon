@@ -6,6 +6,7 @@ numpy==1.26.4
 pandas==2.2.3
 scipy==1.14.1
 pyarrow==24.0.0
+PyYAML==6.0.2          # Faz 04 config/feature_groups.yaml serilestirme
 
 # Modelleme (Faz 02 anchor + Faz 06 base'ler)
 scikit-learn==1.4.2
