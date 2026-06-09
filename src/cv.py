@@ -15,13 +15,17 @@ KILITLI PROTOKOL (SPEC §4-§6):
     oof_M ile test_M AYNI 15 modelden gelir -> CV-MSE submission'in sapmasiz olcusu.
   * clip[0,100] TEK fonksiyondan (clip_predictions) hem OOF hem test'e; MSE clip SONRASI.
   * Kabul kapisi (sonraki fazlar): yeni_cv < eski_cv - 0.25*cv_std. Esitlikte basit model (Occam).
+  * CO-HEADLINE METRIK: compute_cv_mse (fold-denge/siralama) YANINDA compute_recency_weighted_mse
+    (train satirlari test graduation_year dagilimiyla importance-weighted) raporlanir; test
+    recency-yogun oldugundan recency-weighted deger private-DURUST tahmindir (review H1).
 
 PAZARLIKSIZ SIZINTI KURALI (SPEC §6):
   * FOLD-ICI FIT MUTLAK: impute/encoding/scaler/TF-IDF/Ridge — HER fit yalniz dis-fold
     train'inden (transformerlar fit_fold ICINDE Pipeline/ColumnTransformer olarak). Hicbir
     istatistik tum-train'de hesaplanmaz. run_oof bu sozlesmeye gore tasarlanmistir: fit_fold
     SADECE (X_tr, y_tr, X_val, y_val) alir; tum-train'e veya test'e erisemez.
-  * Yil kolonlari (application_year/graduation_year) HAM feature DEGIL. student_id feature degil.
+  * student_id feature DEGIL. Yil kolonlari HAM SAYISAL feature olarak DAHILDIR (review C1
+    duzeltmesi; olculdu: +yillar CV 87.91->81.69, recency-proxy 101.1->92.8).
 
 Determinizm: SEED=42 her yerde. cv.py model-agnostiktir (sadece numpy/pandas/sklearn);
 modele ozgu determinizm bayraklari (LightGBM deterministic=True vb.) fit_fold'u kuran
@@ -64,7 +68,12 @@ CATEGORICAL_COLS = (
     "hobby",
     "preferred_social_media_platform",
 )
-# Yil kolonlari: adversarial AUC yilli 0.666 / yilsiz ~0.49 -> HAM feature KULLANILMAZ.
+# Yil kolonlari: HAM SAYISAL feature olarak TUTULUR (review C1). Adversarial AUC (yilli 0.666)
+# bir KOVARYAT-KAYMA dedektorudur, ZARAR dedektoru DEGIL: tum test yil degerleri train'de mevcut
+# (ekstrapolasyon yok) ve public/private AYNI test setinin rastgele bolmeleri -> tek feature
+# public/private ayrismasi yaratamaz. Olculen: +yillar CV-MSE 87.913->81.689 (-6.2),
+# recency-agirlikli OOF 101.09->92.75 (-8.3), temporal holdout 141.7->121.6. Kayma feature
+# atarak degil, VALIDATION tarafinda yonetilir (recency_weights + compute_recency_weighted_mse).
 YEAR_COLS = ("application_year", "graduation_year")
 
 # 7 NA'li sayisal kolon (Faz 01 missing_map.csv). _missing bayraklari fold-bagimsiz
@@ -133,9 +142,10 @@ def load_test() -> pd.DataFrame:
 
 
 def numeric_feature_columns(df: pd.DataFrame) -> list[str]:
-    """Sayisal feature listesi: id/target/text/kategorik/yil HARIC tum kolonlar.
+    """YIL-DISI sayisal feature listesi: id/target/text/kategorik/yil HARIC tum kolonlar (37).
 
-    Train icin 37, test icin 37 (target yok) -> ayni kolon kumesi."""
+    Yillar ayri tutulur (YEAR_COLS) ve build_structured_matrix'te with_years=True ile HAM
+    SAYISAL eklenir; boylece adversarial/teshis kosullari yil-disi uzayi ayrica olcebilir."""
     drop = {ID_COL, TARGET_COL, TEXT_COL, *CATEGORICAL_COLS, *YEAR_COLS}
     return [c for c in df.columns if c not in drop]
 
@@ -157,14 +167,20 @@ def build_structured_matrix(
     df: pd.DataFrame,
     cat_dtypes: dict,
     with_flags: bool = True,
+    with_years: bool = True,
 ):
-    """Anchor 'yapisal' feature matrisi (lgbm_num): sayisal + native-kategorik + missing-flag.
-    METIN ve YIL yok. Native kategorik (one-hot degil) -> hedef-bagimsiz, fold-safe.
+    """Anchor 'yapisal' feature matrisi (lgbm_num): sayisal + YIL (ham sayisal) +
+    native-kategorik + missing-flag. METIN yok. Native kategorik -> hedef-bagimsiz, fold-safe.
+
+    with_years=True VARSAYILAN (review C1): application_year + graduation_year ham sayisal.
+    with_years=False yalniz teshis (or. adversarial yil-disi olcum) icindir.
 
     Doner: (X, categorical_feature_names).
     NaN'lar sayisal kolonlarda KORUNUR (LightGBM native isler -> impute yok -> sizinti yok).
     """
     parts = [df[numeric_feature_columns(df)].reset_index(drop=True)]
+    if with_years:
+        parts.append(df[list(YEAR_COLS)].astype(float).reset_index(drop=True))
     if with_flags:
         fl = df[list(NA_COLS)].isna().astype("int8")
         fl.columns = [f"{c}_missing" for c in NA_COLS]
@@ -423,6 +439,33 @@ def compute_cv_mse(oof, y, folds: pd.DataFrame, student_id):
 
 
 # --------------------------------------------------------------------------- #
+# Recency-agirlikli OOF-MSE — private-DURUST co-headline (review H1/C1).
+# Test graduation_year dagilimi recency-yogun (2024-26); unweighted random CV bu yuzden
+# private'i ~10+ MSE iyimser tahmin eder. Importance weighting (w = P_test/P_train) bunu
+# duzeltir. Standart compute_cv_mse fold-denge/SIRALAMA icin kalir; recency-weighted deger
+# mutlak private beklentisi icin CO-HEADLINE raporlanir.
+# --------------------------------------------------------------------------- #
+RECENCY_COL = "graduation_year"
+
+
+def recency_weights(train_df: pd.DataFrame, test_df: pd.DataFrame, col: str = RECENCY_COL) -> np.ndarray:
+    """Train satir agirliklari: w_i = P_test(col=v_i) / P_train(col=v_i), mean-normalize."""
+    tr = train_df[col].value_counts(normalize=True)
+    te = test_df[col].value_counts(normalize=True)
+    w = (train_df[col].map(te).fillna(0.0) / train_df[col].map(tr)).to_numpy(dtype=float)
+    assert np.isfinite(w).all() and w.sum() > 0, "recency_weights: bozuk agirlik (NaN/Inf/0)."
+    return w / w.mean()
+
+
+def compute_recency_weighted_mse(oof, y, w) -> float:
+    """Recency-agirlikli OOF-MSE (clip SONRASI). compute_cv_mse'nin YANINDA co-headline."""
+    oof = clip_predictions(oof)
+    y = np.asarray(y, dtype=float)
+    w = np.asarray(w, dtype=float)
+    return float(np.sum(w * (y - oof) ** 2) / np.sum(w))
+
+
+# --------------------------------------------------------------------------- #
 # Kabul kapisi & gap esikleri — UST OTORITE karari (SPEC §8 DoD-8, MASTERPLAN).
 # Sonraki tum fazlar (04-07) bu fonksiyonlari kullanir.
 # --------------------------------------------------------------------------- #
@@ -440,7 +483,11 @@ def acceptance_gate(new_mean: float, old_mean: float, old_std: float, k: float =
 def gap_status(public_lb_mse: float, cv_mse_mean: float, cv_mse_std: float) -> str:
     """CV-LB gap saglik sensoru (MASTERPLAN). Public LB SADECE sensor; karar DAIMA CV.
 
-    yesil: |gap| <= 1.5*std ; sari: 1.5-3*std ; kirmizi: >3*std VE public<CV (sizinti suphesi -> DUR).
+    SIMETRIK (review H1 duzeltmesi): yesil |gap| <= 1.5*std ; sari 1.5-3*std ;
+    kirmizi |gap| > 3*std — HER IKI YONDE DUR:
+      public << CV : sizinti suphesi (CV sahte iyimser) -> pipeline'i incele.
+      public >> CV : dagilim kaymasi / CV iyimser -> recency-agirlikli metrige gec (re-kalibre);
+                     bunu "sizinti yok" diye GECISTIRME.
     """
     gap = public_lb_mse - cv_mse_mean
     a = abs(gap)
@@ -448,4 +495,4 @@ def gap_status(public_lb_mse: float, cv_mse_mean: float, cv_mse_std: float) -> s
         return "yesil"
     if a <= 3.0 * cv_mse_std:
         return "sari"
-    return "kirmizi" if public_lb_mse < cv_mse_mean else "sari"
+    return "kirmizi"

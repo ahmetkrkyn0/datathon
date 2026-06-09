@@ -1,18 +1,30 @@
-Faz 2 — Adversarial Validation (yil-disi nihai matris; SPEC §4 Adim 8 / DoD-6)
+Faz 2 — Adversarial Validation (kayma dedektoru; SPEC §4 Adim 8 / DoD-6)
 ==============================================================================
 Siniflandirici : LGBMClassifier(n_estimators=200, max_depth=4, num_leaves=15, lr=0.05, deterministic, seed=42)
 Protokol       : Train(0)/Test(1) etiketi, StratifiedKFold(5, shuffle, rs=42) OOF proba, ROC-AUC
-Yil kolonlari  : MATRISTE YOK (application_year, graduation_year ham feature degil)
+Yil kolonlari  : MATRISTE VAR (application_year, graduation_year ham sayisal; review C1 duzeltmesi)
 
-AUC olcumleri (yil-disi):
-  numeric-only (37 feature)              : 0.4980   (EDA ref 0.4942; SPEC ~0.49)
-  yapisal num+kategorik+flag (49 feature): 0.5361   (EDA ref 0.5347; anchor matrisi)
-  [referans] yillarla (EDA)              : 0.6658  (yillar drop edildi)
+AUC olcumleri:
+  numeric-only, yil-disi (37 feature)        : 0.4980   (EDA ref 0.4942)
+  yapisal yil-disi num+kat+flag (49 feature) : 0.5361   (EDA ref 0.5347)
+  yapisal +YILLAR = ANCHOR matrisi (51)      : 0.6614   (EDA ref 0.6658; BEKLENEN ~0.66)
 
-Esik           : AUC < 0.55 GUVENLI ; 0.55-0.60 SARI ; > 0.60 KIRMIZI (incele)
-KARAR          : GUVENLI (random stratified KFold private'i sadik temsil eder)
+KARAR          : YILLAR TUTULDU. Adversarial AUC bir KOVARYAT-KAYMA dedektorudur,
+                 zarar dedektoru DEGIL; 'AUC<0.55 guvenli -> yuksekse at' mantigi
+                 HATALIYDI ve duzeltildi. Olcum: yillari eklemek CV-MSE'yi
+                 87.91->81.69 (-6.2), recency-agirlikli private-proxy'yi
+                 101.1->92.8 (-8.3) iyilestiriyor. Tum test yil degerleri train'de
+                 mevcut; public/private ayni test setinin rastgele bolmeleri ->
+                 tek feature public/private ayrismasi yaratamaz.
 
-Not: num+kategorik AUC'nin numeric-only'dan yuksekligi target_role'un train/test ikincil
-     kaymasidir (yil drift'inin kategorik yansimasi; AI Engineer %8.27->%11.71). 0.535<0.55
-     -> GUVENLI; target_role degerli sinyaldir, ATILMAZ. Faz 04 nihai matriste ~0.53 bekle
-     (tam 0.50 degil). AUC>0.6 olursa suclu feature (oncelikle yil turevleri) incelenir.
+Kaymanin yonetimi (feature atmak DEGIL, validation kalibrasyonu):
+  * Co-headline metrik: recency-agirlikli OOF-MSE (w=P_test(gy)/P_train(gy)) =
+    private-durust tahmin (cv.compute_recency_weighted_mse).
+  * Gap politikasi SIMETRIK: |gap|>3*std her iki yonde KIRMIZI/DUR (cv.gap_status).
+
+Kayma-monitoru : yil-disi uzay AUC < 0.6 -> TEMIZ (yillar disinda beklenmedik yeni kayma yok).
+
+Not: Ana kayma YILLARDADIR; kucuk ikincil kategorik kayma target_role'dadir
+     (yil drift'inin kategorik yansimasi; AI Engineer %8.27->%11.71). target_role
+     degerli sinyaldir, TUTULUR. Yil-disi AUC>0.6 olursa yillar disinda yeni kayma
+     var demektir -> incele (feature reddi yine otomatik degil; olc + kapidan gecir).
