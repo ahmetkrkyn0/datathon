@@ -50,7 +50,7 @@ BTK Akademi / Google / Girisimcilik Vakfi **Datathon 2026** (Kaggle) yarismasi: 
 - **Public LB'ye guvenme:** Yalnizca saglik sensoru. Gap esikleri: saglikli `|gap|<=1.5*cv_std`; sari `1.5-3*std` (sizinti incele, public'e gore SECME); kirmizi `>3*std` ve public<CV -> DUR.
 - **Fold-safe (sizintisiz) pipeline:** HER fit edilen donusum (imputation, target/mean encoding, TF-IDF, scaler, SVD, NLP-uzeri Ridge) SADECE o dis fold'un train parcasindan fit edilir, valid/test'e transform edilir. Global encoding YASAK; OOF target-encoding + Bayesian smoothing (m~20-50) kullanilir. Tum modeller AYNI `data/folds.parquet` dosyasini kullanir (satir-hizali OOF).
 - **Yil kolonlari (temporal kayma):** `application_year` ve `graduation_year` HAM FEATURE olarak KULLANILMAZ (adversarial AUC yillarla 0.66, yilsiz ~0.49). Sadece shift-invariant turev denenir ve nihai matriste adversarial AUC ~0.5 kaldigi DOGRULANIRSA kalir.
-- **Sabit seed / reproducibility:** `SEED=42` her yerde (numpy, lgbm, catboost, sklearn, `PYTHONHASHSEED`). LightGBM `deterministic=True` + sabit thread. `requirements.txt` pinli. `oof_*.npy` + `test_*.npy` + CV-MSE(mean, std) loglanir. Notebook "Save & Run All" ile internet kapali bastan sona ayni sonucu uretmeli.
+- **Sabit seed / reproducibility:** `SEED=42` her yerde (numpy, lgbm, catboost, sklearn, `PYTHONHASHSEED`). LightGBM `deterministic=True` + sabit thread. `requirements.txt` pinli. `oof_*.npy` + `test_*.npy` + CV-MSE(mean, std) loglanir. Pipeline (`python src/<faz>.py`) internet kapali bastan sona ayni sonucu uretmeli.
 - **Tahminleri [0,100] clip et:** Tum cikti `np.clip(pred, 0, 100)`. Submission yazici clip-disi deger gorurse `assert` ile hata firlatir. Log/logit donusumu YOK.
 - **Kabul kapisi (overfit kapisi):** `yeni_cv_mse_mean < eski_cv_mse_mean - 0.25*cv_mse_std` olmali. Marjinal "0.1 MSE" kazanci REDDEDILIR. Esitlikte daha basit model kazanir (Occam).
 - **Turkce metin normalizasyonu:** Turkce-duyarli lowercase (I/ı, İ/i tuzagina dikkat); metin ve lexicon AYNI normalizasyon. UTF-8 oku; ftfy/latin1 mojibake fix YAPMA (veriyi bozar).
@@ -77,7 +77,7 @@ datathon26/
 │   ├── 05-nlp-text-features/SPEC.md
 │   ├── 06-modeling-ensembling/SPEC.md
 │   └── 07-evaluation-submission/SPEC.md
-├── notebooks/                      # Temiz, reproducible Kaggle notebook(lar)
+├── src/                      # Temiz, reproducible Python script(ler)i
 └── submissions/
     ├── submissions_log.csv         # tarih, model, commit_hash, cv_mean, cv_std, public_lb, gap, secildi
     └── *.csv                       # student_id, career_success_score
@@ -86,7 +86,7 @@ datathon26/
 ## Submission Disiplini
 
 - **Butce:** Gunde max 5 hak, ama her gun 5 harcanmaz; gunluk hakkin >=3'u rezerv. Submission yalnizca (a) yeni model ailesi ilk kez LB'ye cikip gap olcumu icin, (b) final adaylarini teyit icin yapilir. "Biraz daha deneyeyim" tuzagina dusme.
-- **Defter:** Her submission `submissions/submissions_log.csv`'ye yazilir: tarih, model_aciklama, notebook_commit_hash, cv_mse_mean, cv_mse_std, public_lb_mse, gap=public-cv, secildi(bool).
+- **Defter:** Her submission `submissions/submissions_log.csv`'ye yazilir: tarih, model_aciklama, commit_hash, cv_mse_mean, cv_mse_std, public_lb_mse, gap=public-cv, secildi(bool).
 - **Final 2 submission (ikisi de CV ile secilir, public-en-yuksek ASLA secilmez):**
   - **SUB-1 (CAPA/safe):** En dusuk cv_mean'li EN BASIT tek guclu GBDT + clip; gap saglikli. "Ne olursa olsun makul" adayi.
   - **SUB-2 (EN IYI CV):** En dusuk cv_mean'li Ridge-stack/NNLS ENSEMBLE; gap saglikli.

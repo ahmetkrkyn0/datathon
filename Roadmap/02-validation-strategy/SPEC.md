@@ -180,7 +180,7 @@ Kanonik `leakageRules`'un bu faza dusen, uygulanabilir karsiligi:
 
 **submissions_log.csv kolonlari (Faz 07 ile birebir):**
 ```
-tarih, model_aciklama, notebook_commit_hash, cv_mse_mean, cv_mse_std,
+tarih, model_aciklama, commit_hash, cv_mse_mean, cv_mse_std,
 public_lb_mse, gap (=public_lb_mse - cv_mse_mean), esik_durumu(yesil/sari/kirmizi),
 test_uretim_yolu(fold_bagging|refit), secildi(bool)
 ```
@@ -229,7 +229,7 @@ artifacts/blend_weights.json  # Faz 06/07 doldurur
 
 - **Gun 1 (9 Haz):** Bu fazin ANA gunu. `folds.parquet` uret + stratify assert; `src/cv.py` (`run_oof` fold-bagging test-uretimiyle + `compute_cv_mse`); anchor `lgbm_num` (~91.6) -> `oof_lgbm_num.npy`/`test_lgbm_num.npy`/`cv_scores.csv`; `cv_log.csv` + `submissions_log.csv` semalari; adversarial ilk teyit; 1 submission (anchor, fold-bagging) -> ilk CV-LB gap olcumu.
 - **Gun 2-4:** Bu fazin protokolu Faz 04/05/06 tarafindan tuketilir (her yeni feature/model AYNI `folds.parquet` + ayni artefakt isimleri + kanonik fold-bagging test-uretimi + kabul kapisindan gecer). Yeni feature matrisi her degisiminde adversarial AUC ~0.5 yeniden dogrulanir.
-- **Gun 5 (13-14 Haz):** Reproducibility testi (Save & Run All, internet kapali) ayni OOF-MSE ve ayni `test_{M}.npy`'yi uretmeli; final 2 submission CV ile secilir (yapisal farkli: capa tek-model + en iyi CV ensemble). Faz 07 bu artefaktlarin icrasidir.
+- **Gun 5 (13-14 Haz):** Reproducibility testi (deterministik tam koşu, internet kapali) ayni OOF-MSE ve ayni `test_{M}.npy`'yi uretmeli; final 2 submission CV ile secilir (yapisal farkli: capa tek-model + en iyi CV ensemble). Faz 07 bu artefaktlarin icrasidir.
 
 ---
 

@@ -176,7 +176,7 @@ Kardinaliteler dusuk-orta (4–11). Iki yol ABLATION ile karsilastirilir, kazana
 | Yil kolonlari ham YASAK | Adversarial AUC 0.664 (yilli) vs 0.491 (yilsiz) | Ham yil/yil-target-encode — CV iyi, private kotu |
 | OHE vs OOF-TE ablation ile | Kardinalite dusuk; OHE cogu zaman yeter ve sizintisiz | Global TE — hedef sizar (kesin yasak) |
 | log1p sadece uzun-kuyruk sayimlar | Uc degerleri yumusatir, Faz 05 lineer tarafiyla uyum | Tum sayisallari donusturmek — gereksiz, skor kolonlari zaten sinirli araliklı |
-| Tek `features.py` + ColumnTransformer | Reproducibility + fold-ici fit garantisi + OOF satir-hizasi | Notebook-ici dagilmis FE — sizinti ve tekrar-uretilemezlik riski |
+| Tek `features.py` + ColumnTransformer | Reproducibility + fold-ici fit garantisi + OOF satir-hizasi | Script disina dagilmis ad-hoc FE — sizinti ve tekrar-uretilemezlik riski |
 
 ---
 

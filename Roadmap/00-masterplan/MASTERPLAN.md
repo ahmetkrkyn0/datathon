@@ -115,7 +115,7 @@ Bu tez bir hipoteze değil, **ölçülmüş veriye** dayanır:
 
 ### Gün 5 (13-14 Haz) — Dondurma & Final Seçim
 - **Faz 07 ana günü. YENİ RİSK YOK.**
-- Tek temiz notebook 'Save & Run All' internet-kapalı **reproducibility testi** (aynı OOF-MSE ve aynı `test_{M}.npy` üretmeli).
+- Tek temiz .py pipeline 'deterministik tam koşu' internet-kapalı **reproducibility testi** (aynı OOF-MSE ve aynı `test_{M}.npy` üretmeli).
 - **FINAL 2 SUB seçimi CV ile:** SUB-1 sade çapa tek-model (en düşük cv_mean'li en basit güçlü GBDT + clip), SUB-2 en iyi CV ensemble (Ridge-stack/NNLS). İkisi yapısal farklı.
 - `submissions_log` + ablation + CV-LB gap grafiğiyle jüri sunumu (6-7 slayt) + Q&A kartları.
 - BTK başvuru/takım-adı uygunluk checklist.
@@ -190,7 +190,7 @@ Bu tez bir hipoteze değil, **ölçülmüş veriye** dayanır:
 
 **Bütçe (günde max 5 hak):** Her gün 5 harcanmaz; günlük hakkın **≥3'ü rezerv.** Submission yalnızca: (a) yeni model ailesi ilk kez LB'ye çıkarken gap ölçmek, (b) final adaylarını teyit etmek. "Biraz daha deneyeyim" tuzağına düşme.
 
-**Defter (`reports/submissions_log.csv`):** `tarih, model_aciklama, notebook_commit_hash, cv_mse_mean, cv_mse_std, public_lb_mse, gap(=public-cv), esik_durumu, test_uretim_yolu, secildi(bool)`.
+**Defter (`reports/submissions_log.csv`):** `tarih, model_aciklama, commit_hash, cv_mse_mean, cv_mse_std, public_lb_mse, gap(=public-cv), esik_durumu, test_uretim_yolu, secildi(bool)`.
 
 **CV-LB gap eşikleri:**
 - 🟢 **Sağlıklı:** `|gap| ≤ 1.5*cv_std`.
@@ -220,7 +220,7 @@ Bu tez bir hipoteze değil, **ölçülmüş veriye** dayanır:
 | Nested-OOF unutulur (NLP) | NLP CV sahte iyimser (83 → private yukarı) | `txt_ridge_pred` yalnız nested kosucu üzerinden; inner/dış fold kesişmemesi assert; OOF kapsamı %100 |
 | Public LB'ye karar kayması (insan zafiyeti) | Private'ta çökme | Altın kural: public = sağlık sensörü; karar sadece CV; günlük hakkın ≥3'ü rezerv |
 | 3 repeat yetersiz çözünürlük | Gürültü kovalama | 0.25*std kapısı gürültü bandını keser; gerekirse 5. repeat (zaman izin verirse) |
-| Reproducibility kırılır (farklı OOF tekrar koşuda) | Jüri notebook'u çalışmaz, eleme | SEED=42 her yerde, deterministik bayraklar, sabit thread, pinli requirements; 'Save & Run All' internet-kapalı test (Gün 5 DoD) |
+| Reproducibility kırılır (farklı OOF tekrar koşuda) | Jüri script'i çalışmaz, eleme | SEED=42 her yerde, deterministik bayraklar, sabit thread, pinli requirements; 'deterministik tam koşu' internet-kapalı test (Gün 5 DoD) |
 | BTK başvuru/takım-adı uyumsuz | Teknik dışı eleme | Gün 5 uygunluk checklist; takım adı BTK başvurusuyla birebir aynı |
 
 ---
@@ -236,13 +236,13 @@ Bu tez bir hipoteze değil, **ölçülmüş veriye** dayanır:
 - [ ] Seviye-1 blend kabul kapısını geçti VEYA geçemediyse en iyi tekil model SUB-2 olarak belgelendi (Occam).
 - [ ] Tüm tahminler `clip[0,100]`; clip-dışı değer yok (assert).
 - [ ] SUB-1 (sade çapa) ve SUB-2 (ensemble) yapısal FARKLI, ikisi de CV ile seçildi; `submissions_log` gap'leri sağlıklı (`|gap| ≤ 1.5*std`).
-- [ ] Tek temiz notebook 'Save & Run All' internet-kapalı aynı OOF-MSE ve `test_{M}.npy` üretti.
+- [ ] Tek temiz .py pipeline 'deterministik tam koşu' internet-kapalı aynı OOF-MSE ve `test_{M}.npy` üretti.
 - [ ] `submissions_log.csv` dolu; final 2 submission 14 Haz 23:59 öncesi onaylandı.
 - [ ] BTK başvuru/takım-adı uygunluk checklist tamam.
 
 ## Jüri Sunum Hazırlığı (5+3 dk)
 
-İlk 10 takım jüriye **5 dk sunum + 3 dk Q&A** yapar ve **temiz, reproducible notebook** paylaşmak ZORUNDA. Anlatı ekseni: **"validation felsefemiz farkımız."**
+İlk 10 takım jüriye **5 dk sunum + 3 dk Q&A** yapar ve **temiz, reproducible .py script** paylaşmak ZORUNDA. Anlatı ekseni: **"validation felsefemiz farkımız."**
 
 **6-7 slayt:**
 1. **Problem & metrik** — career_success regresyonu, MSE, clip[0,100] mantığı.
@@ -251,7 +251,7 @@ Bu tez bir hipoteze değil, **ölçülmüş veriye** dayanır:
 4. **Sızıntı-güvenli pipeline** — fold-içi fit, OOF sözleşmesi, MNAR düzeltmesi (internship vs open_source ayrımı).
 5. **Türkçe NLP ablation** — NUM-only 89.86 → +Ridge-OOF+lexicon 83.21; char n-gram "denedik, kötüleşti, çıkardık" (en güçlü 30 saniye).
 6. **Ensemble & final-2 gerekçesi** — seed-avg + blend; SUB-1/SUB-2 yapısal çeşitlilikle private risk dağıtımı.
-7. **Reproduce adımları** — SEED=42, pinli requirements, 'Save & Run All' internet-kapalı.
+7. **Reproduce adımları** — SEED=42, pinli requirements, 'deterministik tam koşu' internet-kapalı.
 
 **Q&A kartları:** "Neden public LB'yi takip etmediniz?", "Yılları neden attınız?", "NLP gerçekten katkı yaptı mı?", "Overfit'ten nasıl emin oldunuz?" — hepsi ölçülmüş sayılarla cevaplanır.
 

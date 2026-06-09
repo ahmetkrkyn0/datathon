@@ -3,7 +3,7 @@
 > Manda: **SIFIR OVERFIT.** Bu faz YENI MODEL URETMEZ; onceki fazlarin OOF artefaktlarini
 > son kez denetler, tahminleri guvenli hale getirir (clip), submission butcesini disiplinle
 > harcar, **iki final submission'i CV ile (public LB ile DEGIL) secer**, ve juriye reproducible
-> tek-notebook + net anlati teslim eder. Bu faz, Faz 02 (Validation Strategy) protokolunun
+> tek-script + net anlati teslim eder. Bu faz, Faz 02 (Validation Strategy) protokolunun
 > uygulamaya gecirildigi son kapidir; bir karar Faz 02'deki overfit kapisindan (0.25*std)
 > gecmiyorsa burada da gecmez.
 
@@ -14,7 +14,7 @@
 Bitmis modelleri (Faz 06 OOF/test artefaktlari) en dusuk OOF-MSE'li ve **CV-LB gap'i en saglikli**
 iki yapisal farkli adaya damitmak, tahminleri `clip[0,100]` ile guvenli kilmak, yarisma formatinda
 (`student_id, career_success_score`) hatasiz submission uretmek ve juri sunumu + internet-kapali
-reproducible notebook ile teslimi tamamlamak.
+reproducible .py script ile teslimi tamamlamak.
 
 ---
 
@@ -53,13 +53,13 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
 ### Bu fazin urettigi cikti artefaktlari
 - `submissions/sub1_anchor.csv`, `submissions/sub2_ensemble.csv` — final 2 aday (clip'li).
 - (gerektiginde gun-ici teyit submission'lari: `submissions/probe_{tarih}_{model}.csv`)
-- `submissions_log.csv` — tarih, model_aciklama, notebook_commit_hash, cv_mse_mean, cv_mse_std,
+- `submissions_log.csv` — tarih, model_aciklama, commit_hash, cv_mse_mean, cv_mse_std,
   public_lb_mse, gap, esik_durumu(yesil/sari/kirmizi), secildi(bool).
 - `artifacts/oof_ensemble.npy`, `artifacts/test_ensemble.npy` — final blend ciktilari.
 - `artifacts/blend_weights.json` — Ridge/NNLS agirliklari + alpha (reproducibility).
 - `reports/cv_lb_gap.png`, `reports/ablation_table.md`, `reports/final_selection.md`
   (SUB-1/SUB-2 gerekce notu) — juri sunumu girdileri.
-- `requirements.txt` (pinli), `notebooks/final_clean.ipynb` (Save & Run All, internet kapali).
+- `requirements.txt` (pinli), `src/final_clean.py` (deterministik tam koşu, internet kapali).
 - `presentation/` (6-7 slayt + Q&A kartlari), `checklist_teslim.md` (BTK uygunluk).
 
 ---
@@ -105,7 +105,7 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
 3. SUB-1 (`sub1_anchor.csv`) ve SUB-2 (`sub2_ensemble.csv`) ayni yazici fonksiyonundan uretilir.
 
 ### 5. CV-LB gap denetimi ve submission butce yonetimi (gunde max 5)
-1. Her gercek submission `submissions_log.csv`'ye yazilir (notebook_commit_hash dahil — reproducibility).
+1. Her gercek submission `submissions_log.csv`'ye yazilir (commit_hash dahil — reproducibility).
 2. Public LB donunce `gap = public_lb_mse - cv_mse_mean` ve esik (Faz 02 §3.2):
    - **Yesil:** `|gap| <= 1.5*cv_std` -> CV'ye guven, devam.
    - **Sari:** `1.5*std < |gap| <= 3*std` -> sizinti/encoding gozden gecir, **public'e gore SECME**.
@@ -126,7 +126,7 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
    `PYTHONHASHSEED`). `folds.parquet` repo'da.
 2. `requirements.txt` **pinli surumler** (lightgbm, catboost, scikit-learn, pandas, numpy, scipy,
    (ops.) transformers/torch). Internet kapali calisir; offline kaynaklar Kaggle Dataset olarak.
-3. `notebooks/final_clean.ipynb` "Save & Run All" ile bastan sona calisir; uretilen OOF-MSE
+3. `src/final_clean.py` "deterministik tam koşu" ile bastan sona calisir; uretilen OOF-MSE
    `cv_scores.csv` ile **eslesir** (deterministik teyit). Hucreler mantik sirasinda, ara debug yok.
 4. `oof_*.npy`, `test_*.npy`, `blend_weights.json`, `submissions_log.csv` repo'da arsivlenir.
 
@@ -154,7 +154,7 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
   olmadan eklenmez. Clip ise gercek hedef [0,100] oldugu icin matematiksel olarak notr/iyilestirici.
 - **Public LB optimizasyon hedefi degil:** rastgele %60/%40 bolme + public ornekleme gurultusu nedeniyle
   public'e gore secim private'ta cokebilir. Tum secim CV-MSE(mean,std) ile (Faz 02 §3.3).
-- **Internet-kapali reproducibility:** ilk 10 takim temiz/reproducible notebook ZORUNDA; "Save & Run All"
+- **Internet-kapali reproducibility:** ilk 10 takim temiz/reproducible .py script ZORUNDA; "deterministik tam koşu"
   testi hem yarisma sartini hem sunum guvenilirligini karsilar.
 
 ---
@@ -180,10 +180,10 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
 ## Teslimler (Deliverables)
 
 1. `submissions/sub1_anchor.csv`, `submissions/sub2_ensemble.csv` (clip'li, format-assert'li).
-2. `submissions_log.csv` (gap takibi + esik durumu + secildi bayragi, notebook_commit_hash'li).
+2. `submissions_log.csv` (gap takibi + esik durumu + secildi bayragi, commit_hash'li).
 3. `artifacts/oof_ensemble.npy`, `artifacts/test_ensemble.npy`, `artifacts/blend_weights.json`.
 4. `reports/cv_lb_gap.png`, `reports/ablation_table.md`, `reports/final_selection.md`.
-5. `requirements.txt` (pinli), `notebooks/final_clean.ipynb` (Save & Run All, internet kapali).
+5. `requirements.txt` (pinli), `src/final_clean.py` (deterministik tam koşu, internet kapali).
 6. `presentation/` (6-7 slayt + Q&A kartlari), `checklist_teslim.md` (BTK uygunluk).
 
 ---
@@ -199,7 +199,7 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
 4. `submissions_log.csv` her gercek submission'i + gap + esik durumunu iceriyor; hicbir aday public
    LB'ye gore secilmedi (gerekce `final_selection.md`'de CV-only).
 5. SUB-1 ve SUB-2 yapisal farkli (tek-model vs ensemble) ve ikisinin de gap'i yesil.
-6. `notebooks/final_clean.ipynb` internet kapali "Save & Run All" ile hatasiz calisti ve OOF-MSE'yi
+6. `src/final_clean.py` internet kapali "deterministik tam koşu" ile hatasiz calisti ve OOF-MSE'yi
    yeniden uretti (deterministik teyit).
 7. Sunum (6-7 slayt + Q&A) ve `checklist_teslim.md` (BTK basvuru + takim adi) tamam; final 2
    submission platformda 14 Haz 23:59 oncesi onaylandi.
@@ -213,7 +213,7 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
 | Public LB'ye gore aday secme cazibesi | Private'ta cokme | Secim CV-only; `final_selection.md` gerekce; public sadece yesil/sari/kirmizi sensoru |
 | Ensemble bir base'in gizli sizintisini buyutur | Private MSE patlar | NNLS + kabul kapisi; SUB-1 sade tek-model capa = sigorta |
 | Submission ID sirasi/kume hatasi | Sessiz buyuk MSE | Yazici assert bloku (sira, kume, kolon, [0,100]); sample_submission ile birebir |
-| Notebook internet acikken calisip offline'da kirilir | Reproducibility ihlali, eleme riski | Offline kaynaklar Kaggle Dataset; "Save & Run All" internet-kapali testi DoD'de |
+| Script internet acikken calisip offline'da kirilir | Reproducibility ihlali, eleme riski | Offline kaynaklar Kaggle Dataset; "deterministik tam koşu" internet-kapali testi DoD'de |
 | Clip OOF'ta uygulanip test'te unutulur (veya tersi) | Rapor edilen CV submission ile uyumsuz | Tek clip fonksiyonu hem OOF hem test'e; OOF-MSE clip sonrasi hesaplanir |
 | Gun-ici 5 submission'in tukenmesi | Final teyit hakki kalmaz | Gunluk >=3 rezerv; probe submission'lar sadece (a) yeni aile / (b) final teyit |
 | best_iteration test'te early stopping ile yeniden secilir | Gizli sizinti, optimistik CV | Refit'te OOF ortalama best_iteration SABIT; test early stopping yok |
@@ -225,7 +225,7 @@ overfit olunur ve private %40'ta cokulebilir. Bu faz overfit'e su somut savunmal
 
 **Gun 5 (13-14 Haz) — Dondurma & Final Secim.** Bu faz takvimin son gunudur. **YENI RISK YOK:** yeni
 feature/model/HP eklenmez. Sira: (1) OOF butunluk denetimi + final blend (sabah), (2) internet-kapali
-"Save & Run All" reproducibility testi, (3) SUB-1/SUB-2 secimi + format-assert, (4) submission_log +
+"deterministik tam koşu" reproducibility testi, (3) SUB-1/SUB-2 secimi + format-assert, (4) submission_log +
 cv_lb_gap grafigi + ablation tablosu, (5) juri sunumu (6-7 slayt) + Q&A kartlari, (6) BTK uygunluk
 checklist, (7) **14 Haz 23:59 deadline oncesi platformda final 2 submission onayi**. Gun-ici probe
 submission'lari (final teyit) butce disiplini icinde harcanir.

@@ -18,7 +18,7 @@ Bu faz, kanonik stratejinin `northStar`'inin temel tasini doser: **CV'nin privat
 - `data/sample_submission.csv` → 2 satir ornek; kolonlar `student_id`, `career_success_score` (ikinci satirdaki `123.94` yalnizca FORMAT ornegidir, gercek hedef [0,100]).
 
 ### Ciktilar (sonraki fazlara devredilen somut artefaktlar)
-- `reports/eda/eda_report.html` (veya notebook `notebooks/01_eda.ipynb`) — tum grafik ve tablolarin tek reproducible kaynagi (SEED=42, internet kapali calisir).
+- `reports/eda/eda_report.html` (veya script `src/01_eda.py`) — tum grafik ve tablolarin tek reproducible kaynagi (SEED=42, internet kapali calisir).
 - `reports/eda/column_profile.csv` — her kolon icin: `dtype`, `role` (numeric/categorical/text/id/target/year), `n_missing_train`, `pct_missing_train`, `n_missing_test`, `pct_missing_test`, `nunique`, `corr_with_target` (sayisal icin), `is_year_suspect` (bool). Faz 3 ve Faz 4 bu dosyayi feature listesi ve impute plani icin okur.
 - `reports/eda/missing_map.csv` — 7 NA'li sayisal kolon + MNAR analizi (NA iken `internship_count==0` orani vb.). Faz 3'un impute+bayrak plani buradan turetilir.
 - `reports/eda/adversarial_auc.json` — `{auc_with_years, auc_without_years, top_features}`. Faz 2'nin adversarial sigortasinin baz cizgisi; Faz 4'te nihai feature matrisinde AUC~0.5 dogrulamasi bununla kiyaslanir.
@@ -67,11 +67,11 @@ Tum adimlar `pandas`, `numpy`, `matplotlib`/`seaborn`, `scikit-learn` ile; SEED=
 - **Turkce lowercase tuzagi:** EDA'da metin normalizasyonu (`str.lower()`) yapilirsa Faz 5 ile AYNI Turkce-duyarli normalizasyon (`I`→`ı`, `İ`→`i`) kullanilir; tutarsiz normalizasyon sessizce frekans olcumlerini bozar (`leakageRules` lowercase kurali).
 
 ## Teslimler (Deliverables)
-1. `notebooks/01_eda.ipynb` — SEED=42, internet kapali, bastan sona reproducible; tum sayisal bulgular hardcode degil hesaplanir.
+1. `src/01_eda.py` — SEED=42, internet kapali, bastan sona reproducible; tum sayisal bulgular hardcode degil hesaplanir.
 2. `reports/eda/column_profile.csv`, `missing_map.csv`.
 3. `reports/eda/target_profile.json`, `adversarial_auc.json`, `text_profile.json`.
 4. `reports/eda/eda_report.html` — 7 bolumlu, juri sunumuna donusebilir.
-5. EDA bulgular ozeti (notebook ic markdown) → Faz 2-5 SPEC'lerinin "Girdiler" bolumune referans.
+5. EDA bulgular ozeti (script ici markdown/yorum) → Faz 2-5 SPEC'lerinin "Girdiler" bolumune referans.
 
 ## Definition of Done
 - [ ] Train/test shape ve kolon farki assert ile dogrulandi (`(10000,47)` / `(10000,46)`, fark sadece hedef).
@@ -82,7 +82,7 @@ Tum adimlar `pandas`, `numpy`, `matplotlib`/`seaborn`, `scikit-learn` ile; SEED=
 - [ ] **Adversarial AUC olculdu: yillarla `≈0.66`, yillarsiz `≈0.50`** ve `adversarial_auc.json`'a yazildi (Faz 2 icin kritik DoD).
 - [ ] Yil dagilim kaymasi (train uniform / test 2024-26 yiginli) ve hedef-by-yil zayif drift belgelendi.
 - [ ] Metin: UTF-8 byte teyidi, benzersizlik (10000/10000), rakam yoklugu (0), uzunluk istatistikleri, anahtar kelime frekanslari `text_profile.json`'a yazildi.
-- [ ] Notebook "Restart & Run All" ile internet kapali hatasiz calisti, ayni sayilari uretti.
+- [ ] `python src/01_eda.py` internet kapali hatasiz calisti, ayni sayilari uretti (deterministik).
 
 ## Riskler & Azaltim
 - **Risk: EDA'da gozlemlenen bir korelasyonun feature secimine "sizip" overfit'e yol acmasi.** → Azaltim: EDA yalniz betimler, karar vermez; tum feature kararlari Faz 4'te fold-ici delta + 0.25·std kapisindan gecer.

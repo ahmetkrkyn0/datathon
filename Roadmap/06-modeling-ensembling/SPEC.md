@@ -119,7 +119,7 @@ Bu faz overfit'in en kolay sizdigi yerdir (model kapasitesi, HP arama, stacking)
 6. Adversarial AUC nihai feature matrisinde ~0.5 teyit (>0.6 ise suclu feature notu).
 7. Tum-train refit best_iteration OOF ortalamasiyla sabit; refit'te valid/test kullanilmadi (kod incelemesiyle dogrulandi).
 8. SUB-1 (sade capa) ve SUB-2 (ensemble) yapisal olarak FARKLI ve ikisi de CV ile secildi; `submissions_log.csv` gap'leri saglikli (|gap| <= 1.5*std).
-9. Notebook 'Save & Run All' internet-kapali ayni cv_mse_mean/std'yi uretti (reproducibility).
+9. Pipeline 'deterministik tam koşu' (`python src/...py`) internet-kapali ayni cv_mse_mean/std'yi uretti (reproducibility).
 
 ---
 
