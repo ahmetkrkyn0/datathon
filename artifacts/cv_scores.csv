@@ -1,0 +1,2 @@
+model,cv_mse_mean,cv_mse_std,best_iteration_mean
+lgbm_num,87.913241,2.613175,367.47
