@@ -1,6 +1,6 @@
 # Faz 2 — Dogrulama Stratejisi (CV) — Anti-Overfit Omurgasi
 
-> **Manda:** SIFIR OVERFIT. Yerel CV, private leaderboard'un **sapmasiz tahmincisi** olmali.
+> **Manda:** SIFIR OVERFIT. Yerel CV, private leaderboard'un **dusuk-varyansli, recency-kalibreli tahmincisi** olmali (test recency-yogun oldugundan unweighted random CV mutlak-MSE'yi iyimser tahmin eder; private-durust beklenti **recency-agirlikli OOF-MSE** ile verilir — review H1).
 > Public LB PESINDE KOSULMAYACAK. Bu dosya tum sonraki fazlarin (03-07) **UST OTORITESIDIR:**
 > bir model / feature / hiperparametre ancak buradaki protokole gore CV-MSE'yi iyilestiriyorsa kabul edilir.
 > Kanonik stratejideki `cvProtocol` ve `leakageRules` ile birebir tutarlidir; o kurallari burada uygulanabilir adimlara cevirir.
@@ -11,7 +11,7 @@
 
 ## 1. Amac
 
-Modellemeden ONCE, private leaderboard MSE'sini **sapmasiz ve dusuk-varyansli** tahmin eden, satir-hizali OOF altyapili, sizinti-gecirmez (leakage-proof) bir **Repeated Stratified 5-fold x 3-repeat** dogrulama omurgasi kurmak; boylece tum model/feature kararlari guvenilir bir CV-MSE(mean, std) sinyaline baglanir. Ayrica **OOF ve test tahmin artefaktlarinin isimlendirmesini ve test-uretim yolunu tek noktada sabitleyerek** rapor edilen CV-MSE'nin submission ile birebir ayni modeli temsil ettigini garanti etmek.
+Modellemeden ONCE, private leaderboard MSE'sini **dusuk-varyansli ve recency-kalibreli** tahmin eden, satir-hizali OOF altyapili, sizinti-gecirmez (leakage-proof) bir **Repeated Stratified 5-fold x 3-repeat** dogrulama omurgasi kurmak; boylece tum model/feature kararlari guvenilir bir CV-MSE(mean, std) sinyaline baglanir. **HEADLINE METRIK = recency-agirlikli OOF-MSE** (train satirlari test `graduation_year` dagilimiyla importance-weighted, `w = P_test(gy)/P_train(gy)`): private-durust mutlak beklenti budur. Standart (unweighted) CV-MSE fold-dengesi ve model SIRALAMASI icin yaninda raporlanir (kayma ~ortak ofset oldugundan siralama buyuk olcude korunur). Ayrica **OOF ve test tahmin artefaktlarinin isimlendirmesini ve test-uretim yolunu tek noktada sabitleyerek** rapor edilen CV-MSE'nin submission ile birebir ayni modeli temsil ettigini garanti etmek.
 
 ---
 
@@ -21,7 +21,7 @@ Bu faz, "sifir overfit" hedefinin **fiziksel kalbidir.** Genellemeye dort somut 
 
 1. **Olcum cozunurlugu:** Tek 5-fold'un fold-std'si ~4.68 olculdu; bu, iki rakip model arasindaki tipik farktan buyuk. 3 repeat (efektif K=15) ile CV-mean standart hatasi `4.68/sqrt(15) ~ 1.21`'e iner. Boylece "gercek iyilesme" ile "gurultu" istatistiksel olarak ayirt edilir; gurultuyu kovalayip overfit etmeyiz.
 2. **Sizinti karantinasi:** TUM fit edilen donusumler (impute, target-encoding, TF-IDF, scaler, Ridge-on-TFIDF) yalniz fold-ici train'den fit edilir. Bu, CV-MSE'nin optimistik bias'ini sifirlar -> CV ile private arasindaki fark minimize edilir.
-3. **Tek ayrismaya kilit (adversarial sigorta):** Olculen tek dagilim kaymasi yil kolonlarindadir (adversarial AUC yilli 0.664, yilsiz 0.491). Yil kolonlari disardiginda train/test ayirt edilemez, yani **random stratified KFold private MSE'nin sadik temsilcisi olur.** Bu fazda bu varsayim her feature matrisi degisikliginde yeniden dogrulanir.
+3. **Kayma tespiti + validation kalibrasyonu (review C1/H1 duzeltmesi):** Ana dagilim kaymasi yil kolonlarindadir (adversarial AUC yilli ~0.666, yil-disi sayisal ~0.49; ikincil kucuk kayma target_role ~0.535). Adversarial AUC bir **kovaryat-kayma dedektorudur, zarar dedektoru DEGIL** — bu yuzden yillar feature olarak **TUTULUR** (olculdu: +yillar CV 87.91→81.69, recency-proxy 101.1→92.8 iyilesme; tum test yil degerleri train'de mevcut, public/private ayni test setinin rastgele bolmeleri). Kayma, feature atarak degil **validation tarafinda** yonetilir: headline recency-agirlikli OOF-MSE + simetrik gap politikasi. Adversarial olcum her matris degisiminde kayma-monitoru olarak tekrarlanir (yil-disi uzay <0.60 temiz kalmali).
 4. **Kabul kapisi (overfit kapisi):** `yeni_cv_mean < eski_cv_mean - 0.25*cv_std` esigi, marjinal/varyans-icindeki "iyilesmeleri" reddederek model karmasikligi birikimini ve CV'ye overfit'i kapida durdurur.
 
 **Ek olarak (bu surumde sabitlendi):** test tahmini ve OOF tahmini **AYNI fold modellerinden** uretildigi icin (asagida §4.3 kanonik yol), rapor edilen CV-MSE submission'in tahmin ettigi seyin sapmasiz olcusudur. Iki farkli test-uretim yolu arasinda kalip "CV bir modeli, submission baska bir modeli temsil etsin" durumu — overfit'in en sinsi kaynaklarindan biri — yapisal olarak kapatilir.
@@ -121,11 +121,11 @@ def compute_cv_mse(oof, y, folds):
 ```
 - `cv_scores.csv` satiri: `model, cv_mse_mean, cv_mse_std, best_iteration_mean`. Faz 07 butunluk denetimi `oof_{M}.npy`'den yeniden hesapladigi MSE'yi bu `cv_mse_mean` ile `+/-1e-6` toleransta esler.
 
-### Adim 7 — Anchor calistir (sadece-sayisal LGBM, `M=lgbm_num`)
-- Faz 06'nin ilk capasi: sadece sayisal + temel FE + kategorik, `objective="regression_l2"`, fold-ici early stopping. Beklenen `cv_mse_mean ~ 91.6`, `std ~ 4.7`. Bu deger CV altyapisinin **dogru** kuruldugunun kanitidir (anchor referans). Cikti: `artifacts/oof_lgbm_num.npy`, `artifacts/test_lgbm_num.npy` (fold-bagging), `cv_scores.csv` satiri.
+### Adim 7 — Anchor calistir (yapisal LGBM, `M=lgbm_num`)
+- Faz 06'nin ilk capasi: sayisal + **yil (ham sayisal)** + kategorik + missing-flag, `objective="regression_l2"`, fold-ici early stopping. Beklenen `cv_mse_mean ~ 81.7` (olculdu: 81.689; eski YILSIZ taban 87.913, stale "91.6" etiketi kullanilmaz — review C1/M1). Co-headline: recency-agirlikli OOF-MSE (~92.8). Bu deger CV altyapisinin **dogru** kuruldugunun kanitidir (anchor referans) ve downstream 0.25*std kabul kapisinin tabanidir. Cikti: `artifacts/oof_lgbm_num.npy`, `artifacts/test_lgbm_num.npy` (fold-bagging), `cv_scores.csv` satiri.
 
-### Adim 8 — Adversarial validation (yil-disi nihai matriste)
-- Train(0)/Test(1) etiketiyle LGBM siniflandirici, AYNI 5-fold. Nihai feature matrisinde (yil kolonlari/turevleri DAHIL DEGIL) **AUC ~0.5** dogrulanir. AUC > 0.6 -> suclu feature incele (oncelikle yil turevleri); 03/04 fazlarina geri bildir. Kayit: `reports/adversarial.txt`.
+### Adim 8 — Adversarial validation (kayma dedektoru)
+- Train(0)/Test(1) etiketiyle TEK LGBM siniflandirici (kategorikler dahil), AYNI 5-fold. Uc olcum: numeric-only yil-disi (~0.49), yapisal yil-disi (~0.535, target_role ikincil kaymasi), yapisal +yillar = anchor matrisi (**~0.66 BEKLENEN** — yillar tutuldugu icin). AUC feature-reddi kriteri DEGILDIR; kayma-monitorudur: **yil-disi uzay AUC > 0.60** olursa yillar disinda beklenmedik yeni kayma var -> incele. Kayit: `reports/adversarial.txt`.
 
 ### Adim 9 — submissions_log semasini kur
 - Asagidaki kolonlarla bos CSV olustur (§7); her submission'da tek satir eklenir.
@@ -143,7 +143,7 @@ def compute_cv_mse(oof, y, folds):
 | Master fold dosyasi | `data/folds.parquet` tek kaynak | Tum modeller satir-hizali OOF -> durust stacking | Her model kendi fold'unu uretir (hizalama bozulur, stack sizar) |
 | **Test-uretim yolu** | **Fold-bagging (15 fold modelinin test ortalamasi) KANONIK** | `test_M` ile `oof_M` AYNI 15 modelden gelir -> CV-MSE submission'in sapmasiz olcusu; ek refit/early-stop karari yok = en kucuk sizinti yuzeyi (audit fix) | Tum-train refit varsayilan (CV fold-bagged OOF'a, submission refit'e dayanir -> CV submission'i tam temsil etmez); opsiyonel olarak korunur ama OOF-dogrulamasi ve log-isareti sarti |
 | Artefakt isimleri | `oof_{M}.npy`, `test_{M}.npy`, `cv_scores.csv(model,cv_mse_mean,cv_mse_std,best_iteration_mean)` | Faz 07 (diskte dolu) bu somut isimleri ve semayi varsayiyor -> 02-07 uyumu (audit fix) | Faz 02'de isim/sema belirsiz birakmak (07 ile uyumsuzluk, butunluk denetimi kirilir) |
-| Yil kolonlari | HAM kullanim YOK | Adversarial AUC yilli 0.664 -> random CV yalan soyler; yilsiz 0.491 -> CV sadik | Yili ham feature/target-encode (CV iyi, private coker) |
+| Yil kolonlari | HAM SAYISAL **TUT** (review C1) | Olculdu: +yillar CV 87.91→81.69 (−6.2), recency-proxy 101.1→92.8 (−8.3); AUC kayma dedektorudur, zarar dedektoru degil; tum test yil degerleri train'de mevcut, public/private ayni test setinin rastgele bolmeleri | Yillari a priori atmak (en degerli sinyal grubu kaybi; "CV iyi, private coker" cercevesi YANLISTI — kayma her iki bolmede ortak) |
 | Post-process | saf `clip[0,100]` | Sansurlu hedef + MSE outlier cezasi; clip bedava/notr kazanc | Log/logit donusum (skew -0.45, cift-sinirli kutleyle kotu) |
 | Stacking | Ridge(alpha CV) / NNLS, OOF uzerinde, ayni dis fold | OOF zaten fold-disi; basit+regularize meta overfit etmez | GBM-stacker varsayilan (10k OOF'ta CV'ye overfit) |
 | Kabul kapisi | `< eski - 0.25*std` | Gurultu bandinin disinda anlamli iyilesme sarti | "Public 0.1 arttı" (overfit davetiyesi) |
@@ -158,7 +158,7 @@ Kanonik `leakageRules`'un bu faza dusen, uygulanabilir karsiligi:
 2. **TARGET-ENCODING:** `department / target_role / university_tier / hobby / preferred_social_media_platform` icin **global** mean/target encoding KESINLIKLE YASAK. Yalniz OOF target-encoding + Bayesian smoothing (m~20-50) veya one-hot.
 3. **TF-IDF / RIDGE-OOF:** vectorizer ve Ridge ASLA train+test birlesimine veya tum-train'e fit edilmez. `txt_ridge_pred` **nested inner-KFold** ile uretilir; aksi halde CV sahte iyimser olur.
 4. **IMPUTATION:** 7 NA'li sayisal kolonun (internship_duration ~%16.6, github_avg_stars/open_source ~%9.1, english_exam ~%9.5, hr_interview ~%7.8, linkedin ~%6.7, portfolio ~%3.6) impute degeri fold-ici fit; `_missing` bayraklari eklenir.
-5. **YIL KOLONU:** `application_year`/`graduation_year` ham veya yil-bazli agregasyon/target-encode YASAK; sadece shift-invariant turev (`years_since_graduation`) ve adversarial AUC ~0.5 kaldigi dogrulanirsa.
+5. **YIL KOLONU (review C1 duzeltmesi):** `application_year`/`graduation_year` HAM SAYISAL feature olarak DAHILDIR (olculmus kazanc; bkz §2.3). Yil-bazli **target-encode** yine yasak-degil-ama-OOF-TE kurallarina tabidir (kural 2). Yil-TUREVI feature'lar (or. `years_since_graduation`) Faz 04'te denenebilir; kabul DAIMA 0.25*std kapisindan gecer — adversarial AUC TEK/otomatik kriter degildir.
 6. **ID / SIRA:** `student_id` (STU_xxxxxx) ASLA feature degil; sentetik uretim sirasi ezberi engellenir.
 7. **STACK/BLEND:** meta-model SADECE out-of-fold level-1 (`oof_*`) tahminleri uzerinde egitilir; in-fold tahminle stacking optimistik OOF uretir.
 8. **TEST-URETIM TUTARLILIGI (audit fix):** Test tahmini KANONIK olarak fold-bagging ile uretilir (15 fold modelinin test ortalamasi), boylece `test_M` ile `oof_M` ayni modellerden gelir. Tum-train refit **yalnizca opsiyonel**, kullanilirsa early-stopping iterasyonu OOF `best_iteration_mean` ile SABITLENIR (refit'te test/valid early stopping YASAK), dagilim-ortusme ve OOF-dogrulamasi gecmeli ve `submissions_log.csv`'de "refit" olarak isaretlenmelidir. **Iki yol karistirilmaz**; bir model icin ya hep fold-bagging ya (dogrulanmis) refit.
@@ -172,9 +172,9 @@ Kanonik `leakageRules`'un bu faza dusen, uygulanabilir karsiligi:
 
 1. `data/folds.parquet` (student_id, repeat, fold) — 30.000 satir, stratify dogrulanmis.
 2. `src/cv.py` — `make_strat_bins`, `get_folds`, `run_oof` (fold-bagging test-uretimi dahili), `compute_cv_mse` (deterministik, SEED=42).
-3. `artifacts/cv_scores.csv` semasi (`model, cv_mse_mean, cv_mse_std, best_iteration_mean`) + anchor `lgbm_num` satiri (~91.6 / ~4.7).
+3. `artifacts/cv_scores.csv` semasi (`model, cv_mse_mean, cv_mse_std, best_iteration_mean`) + anchor `lgbm_num` satiri (~81.7 / ~2.9; recency-agirlikli ~92.8 co-headline).
 4. `reports/cv_log.csv` (15 fold-MSE detayi) ve `reports/submissions_log.csv` semasi (bos, kolonlar tanimli).
-5. `reports/adversarial.txt` — yil-disi nihai matris AUC ~0.5 kaydi.
+5. `reports/adversarial.txt` — 3 AUC olcumu (numeric-only yil-disi ~0.49, yapisal yil-disi ~0.54, yapisal+YILLAR=anchor ~0.66 BEKLENEN) + kayma-monitoru karari (yil-disi uzay <0.60 temiz).
 6. Anchor icin `artifacts/oof_lgbm_num.npy`, `artifacts/test_lgbm_num.npy` (fold-bagging).
 7. `requirements.txt` pinli surumler.
 
@@ -198,12 +198,12 @@ artifacts/blend_weights.json  # Faz 06/07 doldurur
 ## 8. Definition of Done
 
 1. `data/folds.parquet` uretildi; **assert geciyor:** her (repeat, fold)'da `mean(y==100)` ve `mean(y<=50)` global orandan `+/-%1` icinde; her satir her repeat'te tam 1 kez validation.
-2. OOF altyapisi calisiyor: sadece-sayisal LGBM anchor (`lgbm_num`) icin `cv_mse_mean` ~**91.6**, `cv_mse_std` ~4.7 raporlu ve `cv_scores.csv`'ye yazildi. Bu, altyapinin dogru kuruldugunun olculebilir kanitidir.
+2. OOF altyapisi calisiyor: yapisal LGBM anchor (`lgbm_num`, sayisal+yil+kategorik+flag) icin `cv_mse_mean` ~**81.7**, `cv_mse_std` ~2.9 raporlu ve `cv_scores.csv`'ye yazildi (recency-agirlikli ~92.8 co-headline). Bu, altyapinin dogru kuruldugunun olculebilir kanitidir.
 3. **Test-uretim yolu fold-bagging olarak calisiyor:** `test_lgbm_num` 15 fold modelinin clip'li test ortalamasidir; `oof_lgbm_num` ayni 15 modelden gelir. (Tum-train refit kullanildiysa OOF-dogrulamasi + dagilim-ortusme gecti ve `submissions_log.csv`'de "refit" isaretli.)
 4. `oof_{M}.npy`'den yeniden hesaplanan MSE, `cv_scores.csv`'deki `cv_mse_mean` ile `+/-1e-6` esit (Faz 07 butunluk denetiminin gecmesi garanti).
 5. Tum tahminler `clip[0,100]` sonrasi MSE hesaplaniyor; clip-disi deger gorulurse `assert` hata firlatiyor; clip hem OOF hem test'e tek fonksiyondan uygulaniyor.
-6. Adversarial AUC olculdu: yil-disi nihai feature matrisinde **~0.5** (>=0.6 ise yazili aksiyon notu, `reports/adversarial.txt`).
-7. `submissions_log.csv` semasi hazir (test_uretim_yolu kolonu dahil); gap esikleri (saglikli `|gap|<=1.5*std`, sari 1.5-3*std, kirmizi >3*std & public<CV) MASTERPLAN'a baglandi.
+6. Adversarial kayma-monitoru olculdu: yil-disi uzay AUC **<0.60** (numeric-only ~0.49, yapisal ~0.54); yilli anchor matrisi ~0.66 BEKLENEN (alarm degil). Yil-disi AUC>=0.60 ise yazili aksiyon notu, `reports/adversarial.txt`.
+7. `submissions_log.csv` semasi hazir (test_uretim_yolu kolonu dahil); gap esikleri SIMETRIK (saglikli `|gap|<=1.5*std`, sari 1.5-3*std, kirmizi `|gap|>3*std` HER IKI YONDE) MASTERPLAN'a baglandi (cv.gap_status ile birebir; review H1).
 8. Kabul kapisi (`< eski - 0.25*std`) tum sonraki fazlara duyuruldu; Occam tie-break (esitlikte basit model) kaydedildi.
 9. `run_oof` reproducibility testi: ayni cagri iki kez calistirilinca **birebir ayni** `cv_mse_mean` ve `test_{M}.npy` uretiyor.
 
@@ -218,7 +218,7 @@ artifacts/blend_weights.json  # Faz 06/07 doldurur
 | 3 repeat yeterli cozunurluk vermez | Gurultu kovalama | 0.25*std kabul kapisi gurultu bandini zaten kesiyor; gerekirse 5. repeat (zaman izin verirse) |
 | `qcut` duplicate sinirlar | Bin sayisi <10, dengesizlik | `duplicates="drop"`; assert ile bin-orani kontrolu |
 | Nested NLP OOF unutulur | NLP CV sahte iyimser (83 -> private'ta yukari) | `txt_ridge_pred` yalniz nested kosucu uzerinden; tek-fit yasak (Faz 05 guard) |
-| Yil turevi ayrismayi yeniden acar | Random CV gecersiz | Her feature matris degisiminde adversarial AUC tekrar olc; >0.6 -> feature reddet |
+| Yil-disi yeni kayma fark edilmez | CV mutlak-MSE iyimser | Her feature matris degisiminde yil-disi adversarial AUC tekrar olc; yil-disi >0.60 -> yillar DISINDA yeni kayma incele (yilli matris ~0.66 BEKLENEN, feature-reddi kriteri degil); headline recency-agirlikli OOF-MSE |
 | best_iteration refit'te yanlis sabitlenir | Final model under/overfit | (Sadece opsiyonel refit yolunda) OOF `best_iteration_mean` ile sabit; refit'te early stopping YASAK |
 | Artefakt isim/sema 07 ile uyumsuz | Faz 07 butunluk denetimi kirilir, teslim gecikir | Isim sozlesmesi §7'de sabit (`oof_{M}.npy`, `test_{M}.npy`, `cv_scores.csv` semasi); 07 ile birebir |
 | Public LB'ye karar kaymasi (insan zafiyeti) | Private'ta cokme | Altin kural: public = saglik sensoru; karar sadece CV; gunluk hakkin >=3'u rezerv |
@@ -227,8 +227,8 @@ artifacts/blend_weights.json  # Faz 06/07 doldurur
 
 ## 10. Sure / Zaman Kutusu
 
-- **Gun 1 (9 Haz):** Bu fazin ANA gunu. `folds.parquet` uret + stratify assert; `src/cv.py` (`run_oof` fold-bagging test-uretimiyle + `compute_cv_mse`); anchor `lgbm_num` (~91.6) -> `oof_lgbm_num.npy`/`test_lgbm_num.npy`/`cv_scores.csv`; `cv_log.csv` + `submissions_log.csv` semalari; adversarial ilk teyit; 1 submission (anchor, fold-bagging) -> ilk CV-LB gap olcumu.
-- **Gun 2-4:** Bu fazin protokolu Faz 04/05/06 tarafindan tuketilir (her yeni feature/model AYNI `folds.parquet` + ayni artefakt isimleri + kanonik fold-bagging test-uretimi + kabul kapisindan gecer). Yeni feature matrisi her degisiminde adversarial AUC ~0.5 yeniden dogrulanir.
+- **Gun 1 (9 Haz):** Bu fazin ANA gunu. `folds.parquet` uret + stratify assert; `src/cv.py` (`run_oof` fold-bagging test-uretimiyle + `compute_cv_mse`); anchor `lgbm_num` (~81.7; recency-agirlikli ~92.8) -> `oof_lgbm_num.npy`/`test_lgbm_num.npy`/`cv_scores.csv`; `cv_log.csv` + `submissions_log.csv` semalari; adversarial ilk teyit; 1 submission (anchor, fold-bagging) -> ilk CV-LB gap olcumu.
+- **Gun 2-4:** Bu fazin protokolu Faz 04/05/06 tarafindan tuketilir (her yeni feature/model AYNI `folds.parquet` + ayni artefakt isimleri + kanonik fold-bagging test-uretimi + kabul kapisindan gecer). Yeni feature matrisi her degisiminde yil-disi adversarial AUC <0.60 (kayma-monitoru) yeniden dogrulanir.
 - **Gun 5 (13-14 Haz):** Reproducibility testi (deterministik tam koşu, internet kapali) ayni OOF-MSE ve ayni `test_{M}.npy`'yi uretmeli; final 2 submission CV ile secilir (yapisal farkli: capa tek-model + en iyi CV ensemble). Faz 07 bu artefaktlarin icrasidir.
 
 ---
