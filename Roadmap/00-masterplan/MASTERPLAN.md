@@ -257,6 +257,22 @@ Bu tez bir hipoteze değil, **ölçülmüş veriye** dayanır:
 
 ---
 
+## Faz 1 EDA — Geri Bildirim (target_role ikincil kayma — adversarial baz çizgisi rafine edildi)
+
+> Faz 1 EDA çalıştırıldığında (`notebooks/01_eda.py`, SEED=42, 34/34 referans kontrolü PASS) bir nokta SPEC referansından saptı; aşağıda raporlanır. **Karar (random stratified KFold) DEĞİŞMEZ;** yalnızca sayı rafine edilir.
+
+- **Bulgu:** Adversarial AUC *yılsız* değeri ölçüm kapsamına bağlı:
+  - **Sadece-sayısal** feature uzayında **0.4942** → SPEC/kanonik strateji referansı (`0.4995`/`0.491`) bununla uyumludur (PASS). SPEC'in 0.50 rakamı **numeric-only** ölçümdür.
+  - **Gerçek feature uzayında (sayısal + kategorik, yıl yok)** **0.5347**. Aradaki farkın tek kaynağı `target_role` kolonunun train↔test dağılım kaymasıdır (max |fark| **3.44 puan**: AI Engineer %8.27→%11.71, Software Developer %15.72→%12.75, Frontend %13.12→%10.70 …).
+- **Kök neden:** Bu, **yıl drift'inin kategorik yansımasıdır** — test ağırlıklı 2024-26'ya yığılı (Adım 8), bu yıllarda yeni **AI/ML/MLOps** rolleri daha sık; dolayısıyla `target_role` kompozisyonu test'te kayıyor. Ayrı bir bağımsız kayma değil, aynı temporal sinyalin kategorik izi.
+- **Sonuç / aksiyon (kilitli kararı bozmaz):** `0.5347 < 0.55` → hâlâ **güvenli bölge**, train↔test pratikte ayrılamaz, random stratified KFold private MSE'nin sadık temsilcisi olmaya devam eder. Düzeltmeler:
+  1. **Faz 4** "nihai matriste adversarial AUC ~0.5 teyit" adımı, `target_role` kodlandığı için **~0.53 beklemeli (tam 0.50 değil)**; bunu sızıntı sanıp paniğe kapılmamalı.
+  2. `target_role` **değerli ve meşru bir sinyaldir (öğrencinin hedef rolü), ATILMAZ.** Yıl kolonlarından farkı: yıl ham feature olarak atılır (kayma + zayıf sinyal); `target_role` tutulur (güçlü sinyal, kayma kabul edilebilir ve <0.6).
+  3. Kırmızı çizgi değişmez: feature-matris adversarial **AUC > 0.6** olursa suçlu feature incelenir (Risk Register).
+- **Kanıt:** `reports/eda/adversarial_auc.json` → `auc_without_years` (0.5347), `auc_without_years_numeric_only` (0.4942), `finding_target_role_shift`.
+
+---
+
 ## Faz Index
 
 - [Faz 01 — EDA & Veri Anlama](../01-eda-data-understanding/SPEC.md)
