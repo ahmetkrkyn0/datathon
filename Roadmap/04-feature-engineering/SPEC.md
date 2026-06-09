@@ -19,9 +19,9 @@ Metin (`mentor_feedback_text`) bu fazda DEGIL — o Faz 05'in isi; burada sadece
 
 ## 2. Amac
 
-Anchor'i (sadece-sayisal LGBM CV-MSE ~91.6) sizinti-guvenli, az sayida yuksek-sinyalli turetilmis
+Anchor'i (yapisal LGBM CV-MSE ~81.7; sayisal+yil+kategorik) sizinti-guvenli, az sayida yuksek-sinyalli turetilmis
 feature ile **olculebilir ve kalici** sekilde dusurmek; tum donusumleri tek bir fold-ici
-`fit/transform` transformer'inda toplayarak CV'nin private MSE'nin sapmasiz tahmincisi kalmasini saglamak.
+`fit/transform` transformer'inda toplayarak CV'nin private MSE'yi dusuk-yanli (Faz 02 recency-kalibreli) temsil etmesini saglamak.
 
 ---
 
@@ -34,8 +34,9 @@ feature ile **olculebilir ve kalici** sekilde dusurmek; tum donusumleri tek bir 
   feature'lari mekanik olarak reddeder. Esitlikte daha az feature kazanir (Occam).
 - **Fold-ici fit zorunlulugu** (impute, target-encode) CV'nin iyimser kacmasini engeller; CV-LB gap'i
   kapali tutar.
-- **Yil kolonlari (application_year, graduation_year) ham/yil-bazli HIC kullanilmaz** (adversarial AUC
-  0.664 -> dagilim kaymasi). Bu, CV'nin private'i temsil etme garantisinin tek somut temelidir.
+- **Yil kolonlari (application_year, graduation_year) HAM SAYISAL TUTULUR** (review C1; olculmus kazanc
+  +yillar 87.91->81.69). Adversarial AUC (yillarla 0.66) kovaryat-kayma dedektorudur, zarar dedektoru
+  DEGIL; kayma feature atarak degil Faz 02 recency-agirlikli validation'la yonetilir.
 - Cikti `data/features_*.parquet` tek bir kaynaktir; tum base modeller (Faz 06) ayni matrisi yer,
   reproducibility ve OOF satir-hizasi korunur.
 
@@ -58,7 +59,7 @@ feature ile **olculebilir ve kalici** sekilde dusurmek; tum donusumleri tek bir 
 | `src/features.py` | Faz 06 | `build_feature_pipeline()` -> sklearn `Pipeline`+`ColumnTransformer`; fold-ici `fit/transform` |
 | `data/features_train.parquet`, `data/features_test.parquet` | Faz 06 | DETERMINISTIK (fold-bagimsiz) feature'lar onbellek; fold-ici olanlar pipeline ile uretilir |
 | `reports/fe_ablation.csv` | Faz 06/07 sunum | her feature grubu icin `cv_mse_mean, cv_mse_std, delta_vs_anchor, kabul(bool)` |
-| `reports/adversarial_auc.txt` | Faz 02/07 | nihai feature matrisinde train/test AUC (~0.5 teyidi) |
+| `reports/adversarial_auc.txt` | Faz 02/07 | nihai matriste train/test AUC (yil-disi <0.60 monitor; yilli ~0.66 beklenen) |
 | `config/feature_groups.yaml` | Faz 06 | feature grup listesi + secim bayraklari (ablation sonucu) |
 | Kategorik kodlama karari (TE vs OHE) | Faz 06 | ablation ile sabitlenir; LGBM/HistGBR icin uygulanir, CatBoost native |
 
@@ -71,8 +72,8 @@ feature ile **olculebilir ve kalici** sekilde dusurmek; tum donusumleri tek bir 
 ### 5.0 Kolon sozlugu (rol ayrimi)
 - **Hedef:** `career_success_score` (0–100).
 - **ID (ASLA feature degil):** `student_id`.
-- **YASAK ham (temporal kayma):** `application_year`, `graduation_year`. `age` SUPHELI — once
-  adversarial AUC katkisi olculur; yil-turevi davranis gosterirse cikar (bkz. §5.6).
+- **HAM SAYISAL TUT (review C1):** `application_year`, `graduation_year` (olculmus kazanc
+  +yillar 87.91->81.69; kayma validation'da yonetilir). `age` ham birakilir, kabul kapisindan gecer (bkz. §5.6).
 - **Skor kolonlari (22):** `cgpa`, `english_exam_score`, `attendance_rate`, `coding_score`,
   `problem_solving_score`, `data_structures_score`, `sql_score`, `machine_learning_score`,
   `backend_score`, `frontend_score`, `cloud_score`, `devops_score`, `project_quality_score`,
@@ -141,13 +142,14 @@ Kardinaliteler dusuk-orta (4–11). Iki yol ABLATION ile karsilastirilir, kazana
   ek kodlama URETILMEZ; cesitlilik kaynagi.
 - Karar: OHE vs OOF-TE, kabul kapisi (0.25*std) ile; fark anlamsizsa OHE secilir (daha basit, sizintisiz).
 
-### 5.6 `age` ve yil-turevi guvenlik kontrolu
-- `age`: oncelikle ham birakilir ama adversarial AUC'ye katkisi olculur (§5.7). Yil-turevi gibi
-  davranirsa (test'te kaymis) cikarilir.
-- `years_since_graduation` gibi shift-invariant bir turev **denenebilir** ANCAK: (1) sabit capaya gore
-  (or. `application_year - graduation_year` farki — yil farki shift-invariant olabilir), (2) nihai
-  matriste adversarial AUC ~0.5 KALDIGI dogrulanirsa. Ayrismayi yeniden acan turev derhal reddedilir.
-  **Varsayilan: yil-turevi YOK** (ekstra is, marjinal kazanc, yuksek kayma riski).
+### 5.6 `age` ve yil-turevi (gated — review C1)
+- `age`: ham birakilir; kabul kapisindan (0.25*std) gecerse kalir. Yillar zaten HAM matriste oldugundan
+  `age`'in yillarla korelasyonu sorun degil; karar CV-MSE ile verilir.
+- `years_since_graduation` (= `application_year - graduation_year`) gibi yil-turevi **denenebilir (gated):**
+  yillar artik HAM matriste oldugundan turev *ek* sinyal katiyor mu, 0.25*std kabul kapisiyla olculur;
+  gecmezse atilir. Adversarial AUC tek/otomatik kriter DEGIL — yil-disi uzayda kayma-monitorudur
+  (turev yil-disi AUC'yi 0.60 ustune cikarirsa yillar disinda yeni kayma demektir, incele).
+  **Varsayilan: dene + kapidan gecir.**
 
 ### 5.7 Pipeline insasi ve olcum dongusu
 1. `build_feature_pipeline()`: deterministik FE (kompozit/carpim/log1p/bayraklar) ham pandas; fold-ici
@@ -156,8 +158,8 @@ Kardinaliteler dusuk-orta (4–11). Iki yol ABLATION ile karsilastirilir, kazana
    `transform`. Anchor LGBM (`objective='regression_l2'`, muhafazakar HP) ile OOF-MSE(mean,std) olc.
 3. Feature gruplari **incremental** eklenir (anchor -> +5.1 -> +5.2 -> +5.3 -> +5.4 -> kategorik karar),
    her adimda `fe_ablation.csv`'ye satir. Kabul kapisi gecmeyen grup geri alinir.
-4. Nihai matriste **adversarial validation** (train=0/test=1, ayni 5-fold) -> AUC raporu; >0.6 ise suclu
-   feature (ozellikle yil-turevi/`age`) cikarilir.
+4. Nihai matriste **adversarial kayma-monitoru** (train=0/test=1, ayni 5-fold) -> AUC raporu; **yil-disi uzay**
+   >0.60 ise yillar disinda yeni kayma var demektir, suclu feature incelenir (yilli tam matris ~0.66 BEKLENEN, alarm degil).
 5. Secilen feature grup bayraklari `config/feature_groups.yaml`'a yazilir; deterministik feature'lar
    `features_*.parquet`'e onbelleklenir.
 
@@ -173,7 +175,7 @@ Kardinaliteler dusuk-orta (4–11). Iki yol ABLATION ile karsilastirilir, kazana
 | `conv_rate` URETME | Olculen korr 0.014, gurultu | Sezgisel "donusum orani" — kanitsiz, sinyalsiz |
 | `internship_duration` NA->0 + bayrak | MNAR: NA'lar count==0 ile; medyan sahte sure uydurur | Medyan impute — yanlis semantik |
 | Diger 6 kolon: bayrak + fold-ici medyan | Missingness bilgi tasiyabilir; impute fold-ici sizintisiz | Global impute — OOF saflik ihlali |
-| Yil kolonlari ham YASAK | Adversarial AUC 0.664 (yilli) vs 0.491 (yilsiz) | Ham yil/yil-target-encode — CV iyi, private kotu |
+| Yil kolonlari HAM SAYISAL TUT (review C1) | Olculdu +yillar CV 87.91->81.69, recency-proxy 101.1->92.8; AUC kayma dedektoru (zarar degil), public/private ayni test setinin rastgele bolmeleri | Yillari atmak — en degerli sinyali kaybeder; "CV iyi private kotu" cercevesi YANLISTI (kayma her iki bolmede ortak) |
 | OHE vs OOF-TE ablation ile | Kardinalite dusuk; OHE cogu zaman yeter ve sizintisiz | Global TE — hedef sizar (kesin yasak) |
 | log1p sadece uzun-kuyruk sayimlar | Uc degerleri yumusatir, Faz 05 lineer tarafiyla uyum | Tum sayisallari donusturmek — gereksiz, skor kolonlari zaten sinirli araliklı |
 | Tek `features.py` + ColumnTransformer | Reproducibility + fold-ici fit garantisi + OOF satir-hizasi | Script disina dagilmis ad-hoc FE — sizinti ve tekrar-uretilemezlik riski |
@@ -189,8 +191,9 @@ Faz 02 §2.2 ve kanonik `leakageRules` ile birebir tutarli:
    tum-train uzerinde hesaplanmaz. (Nihai test tahmininde tum-train'e fit dogru; CV OLCUMUNDE yasak.)
 2. **GLOBAL TARGET-ENCODING KESIN YASAK:** `department`/`target_role`/`university_tier`/`hobby`/
    `preferred_social_media_platform` mean-encode yalnizca OOF + Bayesian smoothing (m~20–50).
-3. **YIL KOLONU LEAK:** `application_year`/`graduation_year` ham/agregasyon/target-encode YASAK. Yil-turevi
-   ancak adversarial AUC ~0.5 kaldigi DOGRULANIRSA.
+3. **YIL KOLONU (review C1):** `application_year`/`graduation_year` HAM SAYISAL feature olarak TUTULUR.
+   Global yil-bazli target-encode yasak (madde 2 OOF-TE'ye tabi); ham sayisal serbest. Yil-turevi denenebilir,
+   0.25*std kapisindan gecerse kalir.
 4. **ID / SIRA LEAK:** `student_id` ASLA feature degil; sira-bazli (index, satir no) feature URETILMEZ.
 5. **IMPUTATION LEAK:** impute degeri fold-ici; `_missing` bayraklar deterministik (NA->1) ama deger
    fold-ici fit.
@@ -199,7 +202,7 @@ Faz 02 §2.2 ve kanonik `leakageRules` ile birebir tutarli:
    uretir; secim CV yapar). Aksi de-facto target leakage.
 7. **HEDEF SIZINTISI:** hicbir feature `career_success_score`'dan turetilmez; metin meta-kolonu
    (`txt_ridge_pred`) Faz 05'te nested-OOF ile uretilir, bu fazda yalnizca slot olarak gecer.
-8. **Adversarial sigorta:** nihai matriste AUC ~0.5 zorunlu teyit (>0.6 -> feature incele/cikar).
+8. **Adversarial kayma-monitoru:** nihai matriste **yil-disi** AUC <0.60 teyit (yilli tam matris ~0.66 BEKLENEN; yil-disi >0.60 -> yillar disinda yeni kayma incele).
 
 ---
 
@@ -209,7 +212,7 @@ Faz 02 §2.2 ve kanonik `leakageRules` ile birebir tutarli:
   FE fonksiyonlari, fold-ici transformer'lar.
 - `data/features_train.parquet`, `data/features_test.parquet` — deterministik feature onbellegi.
 - `config/feature_groups.yaml` — feature grup listesi + ablation sonucu secim bayraklari.
-- `reports/fe_ablation.csv` — `grup, cv_mse_mean, cv_mse_std, delta_vs_anchor(91.6), kabul`.
+- `reports/fe_ablation.csv` — `grup, cv_mse_mean, cv_mse_std, delta_vs_anchor(~81.7), kabul`.
 - `reports/adversarial_auc.txt` — nihai feature matrisi train/test AUC + suclu-feature notu.
 - Kisa karar notu (markdown degil; `fe_ablation.csv` + `feature_groups.yaml` yorumlari): TE vs OHE karari,
   `conv_rate` ret kaniti, yil-turevi karari.
@@ -220,13 +223,13 @@ Faz 02 §2.2 ve kanonik `leakageRules` ile birebir tutarli:
 
 1. `src/features.py` calisiyor; pipeline `data/folds.parquet` ile fold-ici `fit/transform` ediyor,
    train+test ayni `transform` yolundan geciyor (NaN ciktisi yok, dtype tutarli).
-2. Anchor (sadece-sayisal) CV-MSE ~91.6 (mean,std) yeniden uretildi; FE'li matris kabul kapisini
-   (`< 91.6 - 0.25*std`) **anlamli** gecti — hedef bant: tek-basina FE ile gozle gorulur dusus (metin
-   sonrasi nihai hedef ~83 Faz 05 ile birlikte).
+2. Anchor (yapisal: sayisal+yil+kategorik) CV-MSE ~81.7 (mean,std) yeniden uretildi; FE'li matris kabul kapisini
+   (`< 81.7 - 0.25*std`) **anlamli** gecti — hedef bant: tek-basina FE ile gozle gorulur dusus (NLP metin
+   kazanci Faz 05 ile birlikte, yilli taban uzerinde olculur).
 3. `fe_ablation.csv` her feature grubu icin delta + kabul(bool) iceriyor; reddedilen gruplar matriste YOK.
-4. Nihai feature matrisinde adversarial AUC <= ~0.55 (ideal ~0.5); >0.6 cikaran feature cikarildi.
-5. `student_id`, `application_year`, `graduation_year` matriste YOK; `_missing` bayraklari mevcut ve
-   `internship_duration_months` NA->0 mantigi dogrulandi.
+4. Nihai feature matrisinde **yil-disi** adversarial AUC <0.60 (yilli tam matris ~0.66 beklenen); yil-disi >0.60 cikaran feature incelendi.
+5. `student_id` matriste YOK; `application_year`/`graduation_year` HAM SAYISAL matriste VAR (review C1);
+   `_missing` bayraklari mevcut ve `internship_duration_months` NA->0 mantigi dogrulandi.
 6. TE secildiyse global-TE olmadigi (fold-ici uretildigi) kod incelemesiyle teyitli.
 7. Ciktilar (`features_*.parquet`, `feature_groups.yaml`) Faz 06'nin tukettigi sema ile uyumlu.
 
@@ -237,7 +240,7 @@ Faz 02 §2.2 ve kanonik `leakageRules` ile birebir tutarli:
 | Risk | Etki | Azaltim |
 |---|---|---|
 | Feature-bombasi -> CV'ye overfit | private MSE patlar | 0.25*std kabul kapisi; carpim sayisi <=6; reddedileni geri al |
-| Gizli yil sizintisi (`age`/turev) | CV iyi, private kotu | adversarial AUC zorunlu teyit; >0.6 -> cikar |
+| Yil-disi yeni kayma (`age`/yil-turevi beklenmedik) | CV mutlak-MSE iyimser | yil-disi adversarial AUC monitor; yil-disi >0.60 -> incele (yilli matris ~0.66 BEKLENEN); kabul DAIMA 0.25*std kapisi |
 | Global TE kazara | hedef sizar, CV-LB gap acilir | TE yalniz ColumnTransformer fold-ici; kod incelemesi DoD'de |
 | `internship_duration` yanlis impute | sahte sinyal | NA->0 + bayrak kuralina sadik kal, medyan kullanma |
 | Korr-gudumlu secim (de-facto leak) | iyimser CV | secim SADECE CV-MSE ile; korr sadece hipotez |
