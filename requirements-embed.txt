@@ -1,0 +1,22 @@
+# TIER-3 SPEKULATIF — multilingual-e5 embedding meta-feature (e5_ridge) icin AYRI bagimlilik dosyasi.
+# =====================================================================================================
+# Bu dosya ANA requirements.txt'i KIRLETMEZ. CV pipeline (cv.py / ensemble.py / finalize) torch'a
+# IHTIYAC DUYMAZ: src/bert_embed.py embedding'leri TEK SEFER cikarip artifacts/emb_*.npy'ye
+# cache'ler; o noktadan sonra e5_ridge.py / ensemble.py yalniz numpy+sklearn ile calisir.
+#
+# Sadece embedding cikariminda (src/bert_embed.py) gereklidir. CPU-only, SEED=42 deterministik.
+#   pip install -r requirements-embed.txt
+#
+# Model: intfloat/multilingual-e5-large -> models/e5-large (git'e COMMIT EDILMEZ, .gitignore'da).
+#
+# NOT (surum secimi): asagidaki surumler bu makinede embedding'in cikarildigi FIILI surumlerdir
+# (cogu zaten kuruluydu). torch CPU wheel'i PyTorch CPU index'inden:
+#   pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+
+torch==2.4.1            # CPU wheel (torch==2.4.1+cpu); CUDA gerekmez
+sentence-transformers==5.4.1
+transformers==4.45.2
+tokenizers==0.20.1
+huggingface-hub==0.26.1
+safetensors==0.7.0
+sentencepiece==0.2.0    # XLM-RoBERTa (e5) tokenizer'i icin

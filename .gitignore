@@ -15,3 +15,9 @@ env/
 
 # Claude Code oturum dosyalari (commit edilmez)
 .claude/
+
+# TIER-3 embedding modeli + HF cache (git'e COMMIT EDILMEZ; bert_embed.py kendi indirir)
+models/
+.cache/huggingface/
+hf_cache/
+artifacts/_embed_run.log   # bert_embed.py gecici calistirma logu (commit edilmez)
