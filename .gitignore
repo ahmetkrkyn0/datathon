@@ -19,3 +19,4 @@ Thumbs.db
 # Geçici / büyük çıktılar
 *.log
 *.tmp
+data/cache/
