@@ -1,5 +1,5 @@
 model,cv_mse_mean,cv_mse_std,recency_weighted_oof_mse,weighted_training,note
-blend,75.280133,3.011042,84.846417,False,blend=ridge_pos_full method=ridge_pos models=lgbm_full+lgbm_num+lgbm_full_w+catboost_full+catboost_full_w+txt_ridge+e5_ridge nested_rw_oof=84.8464 (durust). weights=lgbm_full=0.1264;lgbm_num=0.4045;lgbm_full_w=0.0171;catboost_full=0.2863;catboost_full_w=0.1488;txt_ridge=0.0000;e5_ridge=0.1527
+blend,74.606973,2.8389,84.239278,False,blend=ridge_pos_full method=ridge_pos models=lgbm_full+lgbm_num+lgbm_full_w+catboost_full+catboost_full_w+txt_ridge+e5_ridge+mm nested_rw_oof=84.2393 (durust). weights=lgbm_full=0.1172;lgbm_num=0.2885;lgbm_full_w=0.0000;catboost_full=0.2609;catboost_full_w=0.1286;txt_ridge=0.0000;e5_ridge=0.1124;mm=0.2122
 blend_isocal,76.715033,2.948144,86.753941,False,"per-year isotonic post-kalibrasyon (forensik 3.5) DENENDI: nested rw-OOF 86.7539 (blend 85.4945, delta +1.2595); kabul kapisi 84.7386 GECMEDI -> ELENDI (Occam/sifir-overfit). Artefakt YAZILMADI."
 blend_p100,,3.023803,85.295913,False,"blend_p100 = iki-asama P(y>=100) post-process [pred'=blend+a*p*(100-blend), a nested]. asama-1 LGBM-binary OOF AUC=0.9578. nested rw-OOF=85.2959 (blend 85.4945, delta -0.1985; oracle tavan 81.92). kabul kapisi (84.7385) GECMEDI -> REDDEDILDI (Occam/sifir-overfit). full-OOF alpha=0.700."
 catboost_full,76.302545,2.688119,86.414935,False,base (ensemble backfill)
@@ -9,6 +9,7 @@ histgbr_full,78.093989,2.719122,88.539994,False,"histgbr_full = HistGradientBoos
 lgbm_full,77.033677,2.730661,87.266319,False,base (ensemble backfill)
 lgbm_full_w,78.307989,2.956506,88.01567,True,base (ensemble backfill)
 lgbm_num,81.702394,2.933211,92.815376,False,base (ensemble backfill)
+mm,83.298131,2.751611,94.82316,False,base (ensemble backfill)
 txt_rich,143.62179,2.248058,162.272293,False,"FORENSICS lever: zengin word(1, 3)+char(2, 6) nested-OOF metin (C3 reversal). standalone rw=162.2723. blend karari ensemble.py'de."
 txt_ridge,147.485102,2.036693,168.017945,False,base (ensemble backfill)
 txt_ridge_wc,144.097318,2.335609,163.885813,False,"word+char birlesik (text_strong.py); STEP2 DENENDI: havuza eklenince blend nested rw-OOF 85.49->85.38 (-0.11, 0.25*std gurultu bandi icinde, corr txt_ridge 0.974) -> REDDEDILDI (nihai blend DISI, Occam/kabul-kapisi)"
