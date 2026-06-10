@@ -53,6 +53,7 @@ def cat_objective(trial):
         l2_leaf_reg=trial.suggest_float("l2_leaf_reg", 1.0, 12.0, log=True),
         random_strength=trial.suggest_float("random_strength", 0.0, 2.0),
         bagging_temperature=trial.suggest_float("bagging_temperature", 0.0, 2.0),
+        one_hot_max_size=16,  # kategorikler <=11 deger: CTR yerine one-hot (cok daha hizli)
         task_type="GPU", devices="0", verbose=0,
         allow_writing_files=False, random_seed=SEED,
     )

@@ -1,16 +1,11 @@
 """
-submission_v4 — Optuna-tuned final model.
+submission_v5 — v4 + BERT metin tahmini feature'i.
 
-- Feature'lar: features.build_features() cache'inden (154+ sayisal, keyword
-  bayraklari dahil)
-- Parametreler: data/cache/best_params.json (tune_v4.py ciktisi)
-- 10-fold x 2 seed: CatBoost (GPU, native kategorik) + LGBM (CPU, TE)
-  + XGB (GPU, TE, divers katki)
-- NNLS agirlikli blend (yil-agirlikli uzayda) + isotonic kontrolu
-- OOF/test tahminleri cache'e kaydedilir (blend deneyleri icin)
-- Cikti: submissions/submission_v4.csv + agirlikli OOF (LB tahmini)
+Fark: bert_text_oof.py'nin urettigi txt_bert (OOF, sizintisiz) feature
+olarak eklenir. Geri kalani v4 ile ayni (tuned parametreler, 10-fold,
+2 seed, NNLS + Ridge-meta blend kiyasi).
 
-Calistir: python -u src/train_model_v4.py
+Calistir: python -u src/train_model_v5.py
 """
 
 import json
@@ -20,7 +15,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import nnls
 from sklearn.model_selection import KFold
-from sklearn.isotonic import IsotonicRegression
+from sklearn.linear_model import Ridge
 
 import features as F
 
@@ -28,7 +23,7 @@ warnings.filterwarnings("ignore")
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "data" / "cache"
-OUT = ROOT / "submissions" / "submission_v4.csv"
+OUT = ROOT / "submissions" / "submission_v5.csv"
 PARAMS_JSON = CACHE / "best_params.json"
 
 SEED = 42
@@ -49,15 +44,17 @@ def target_encode(tr_col, apply_col, y_tr, gmean, smoothing=20):
 def main():
     print("Feature'lar yukleniyor...")
     train, test, y, w_fit, num_cols = F.build_features()
+    # --- BERT feature ---
+    train["txt_bert"] = np.load(CACHE / "bert_oof.npy")
+    test["txt_bert"] = np.load(CACHE / "bert_test.npy")
+    num_cols = num_cols + ["txt_bert"]
     cat_input_cols = num_cols + F.CAT_COLS
     gmean = y.mean()
-    print(f"  train {train.shape} | sayisal {len(num_cols)}")
+    print(f"  train {train.shape} | sayisal {len(num_cols)} (txt_bert dahil)")
 
     best = json.loads(PARAMS_JSON.read_text())
     cat_p = best["cat"]["params"]
     lgbm_p = best["lgbm"]["params"]
-    print(f"  tuned cat : {cat_p}")
-    print(f"  tuned lgbm: {lgbm_p}")
 
     from catboost import CatBoostRegressor
     from lightgbm import LGBMRegressor
@@ -119,45 +116,47 @@ def main():
         p = np.clip(oof[n], 0, 100)
         print(f"  {n:5s}: {((y - p) ** 2).mean():8.4f} | {wmse(y, p, w_fit):8.4f}")
 
+    # --- NNLS blend ---
     M = np.column_stack([oof[m] for m in names])
+    Mte = np.column_stack([test_pred[m] for m in names])
     sw = np.sqrt(w_fit)
     w_blend, _ = nnls(M * sw[:, None], y * sw)
     w_blend = w_blend / w_blend.sum()
-    ens = np.clip(M @ w_blend, 0, 100)
-    print("\n=== ENSEMBLE ===")
-    for n, wi in zip(names, w_blend):
-        print(f"  {n:5s} agirlik = {wi:.3f}")
-    flat = ((y - ens) ** 2).mean()
-    weighted = wmse(y, ens, w_fit)
-    print(f"  duz MSE = {flat:.4f} | agirlikli (LB tahmini) = {weighted:.4f}")
+    nnls_oof = np.clip(M @ w_blend, 0, 100)
+    nnls_score = wmse(y, nnls_oof, w_fit)
 
-    # isotonic kontrol (CV'li, durust)
-    iso_oof = np.zeros_like(ens)
-    for tr_idx, va_idx in kf.split(ens):
-        iso = IsotonicRegression(y_min=0, y_max=100, out_of_bounds="clip")
-        iso.fit(ens[tr_idx], y[tr_idx], sample_weight=w_fit[tr_idx])
-        iso_oof[va_idx] = iso.predict(ens[va_idx])
-    m_after = wmse(y, iso_oof, w_fit)
-    use_iso = m_after < weighted
-    print(f"Isotonic: {weighted:.4f} -> {m_after:.4f} "
-          f"({'UYGULANIYOR' if use_iso else 'atlandi'})")
+    # --- Ridge meta (v4b'de kazanmisti) ---
+    extra_tr = train[["application_year", "project_quality_score"]].fillna(0).values
+    extra_te = test[["application_year", "project_quality_score"]].fillna(0).values
+    Xmeta = np.column_stack([M, extra_tr])
+    ridge_oof_p = np.zeros(len(y))
+    for tr_i, va_i in kf.split(Xmeta):
+        r = Ridge(alpha=1.0)
+        r.fit(Xmeta[tr_i], y[tr_i], sample_weight=w_fit[tr_i])
+        ridge_oof_p[va_i] = r.predict(Xmeta[va_i])
+    ridge_oof_p = np.clip(ridge_oof_p, 0, 100)
+    ridge_score = wmse(y, ridge_oof_p, w_fit)
 
-    Mte = np.column_stack([test_pred[m] for m in names])
-    final = np.clip(Mte @ w_blend, 0, 100)
-    if use_iso:
-        iso = IsotonicRegression(y_min=0, y_max=100, out_of_bounds="clip")
-        iso.fit(ens, y, sample_weight=w_fit)
-        final = iso.predict(final)
-    final = np.clip(final, 0, 100).round(3)
+    print("\n=== BLEND ===")
+    print(f"  NNLS      : {nnls_score:.4f} (agirliklar {np.round(w_blend,3)})")
+    print(f"  Ridge meta: {ridge_score:.4f}")
 
-    # OOF/test tahminlerini kaydet (blend deneyleri icin)
-    np.savez(CACHE / "preds_v4.npz", y=y, w_fit=w_fit,
+    if ridge_score < nnls_score:
+        mdl = Ridge(alpha=1.0).fit(Xmeta, y, sample_weight=w_fit)
+        final = np.clip(mdl.predict(np.column_stack([Mte, extra_te])), 0, 100)
+        chosen, score = "ridge-meta", ridge_score
+    else:
+        final = np.clip(Mte @ w_blend, 0, 100)
+        chosen, score = "nnls", nnls_score
+    final = final.round(3)
+
+    np.savez(CACHE / "preds_v5.npz", y=y, w_fit=w_fit,
              **{f"oof_{m}": oof[m] for m in names},
              **{f"test_{m}": test_pred[m] for m in names})
 
     sub = pd.DataFrame({F.ID: test[F.ID], F.TARGET: final})
     sub.to_csv(OUT, index=False)
-    print(f"\nYAZILDI -> {OUT}")
+    print(f"\nYAZILDI -> {OUT} (blend: {chosen}, LB tahmini ~{score:.2f})")
     print(f"satir: {len(sub)} | aralik: {final.min()}-{final.max()} | ort: {final.mean():.2f}")
     print(sub.head().to_string(index=False))
 
