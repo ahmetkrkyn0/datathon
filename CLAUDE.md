@@ -78,15 +78,17 @@ datathon26/
 │   ├── 06-modeling-ensembling/SPEC.md
 │   └── 07-evaluation-submission/SPEC.md
 ├── src/                      # Temiz, reproducible Python script(ler)i
+├── reports/
+│   ├── submissions_log.csv         # defter (LOG_COLS semasi, make_submission.py)
+│   └── model_scores.csv            # karar defteri (recency_weighted_oof_mse = KARAR)
 └── submissions/
-    ├── submissions_log.csv         # tarih, model, commit_hash, cv_mean, cv_std, public_lb, gap, secildi
     └── *.csv                       # student_id, career_success_score
 ```
 
 ## Submission Disiplini
 
 - **Butce:** Gunde max 5 hak, ama her gun 5 harcanmaz; gunluk hakkin >=3'u rezerv. Submission yalnizca (a) yeni model ailesi ilk kez LB'ye cikip gap olcumu icin, (b) final adaylarini teyit icin yapilir. "Biraz daha deneyeyim" tuzagina dusme.
-- **Defter:** Her submission `submissions/submissions_log.csv`'ye yazilir: tarih, model_aciklama, commit_hash, cv_mse_mean, cv_mse_std, public_lb_mse, gap=public-cv, secildi(bool).
+- **Defter:** Her submission `reports/submissions_log.csv`'ye yazilir (make_submission.LOG_COLS semasi): tarih, model_aciklama, commit_hash, cv_mse_mean, cv_mse_std, recency_weighted_oof_mse, public_lb_mse, gap(=public-rw_OOF), esik_durumu(yesil/sari/kirmizi), test_uretim_yolu, secildi(bool), not.
 - **Final 2 submission (ikisi de CV ile secilir, public-en-yuksek ASLA secilmez):**
   - **SUB-1 (CAPA/safe):** En dusuk cv_mean'li EN BASIT tek guclu GBDT + clip; gap saglikli. "Ne olursa olsun makul" adayi.
   - **SUB-2 (EN IYI CV):** En dusuk cv_mean'li Ridge-stack/NNLS ENSEMBLE; gap saglikli.
