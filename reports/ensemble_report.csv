@@ -1,0 +1,16 @@
+blend,method,models,weights,intercept,nested_rw_oof
+nnls_full,nnls,lgbm_full+lgbm_num+lgbm_full_w+catboost_full+catboost_full_w+txt_ridge,lgbm_full=0.1986;lgbm_num=0.1637;lgbm_full_w=0.0311;catboost_full=0.6079;catboost_full_w=0.0000;txt_ridge=0.0000,0.0,85.971172
+ridge_pos_full,ridge_pos,lgbm_full+lgbm_num+lgbm_full_w+catboost_full+catboost_full_w+txt_ridge,lgbm_full=0.1688;lgbm_num=0.2883;lgbm_full_w=0.0000;catboost_full=0.3907;catboost_full_w=0.1887;txt_ridge=0.0444,-6.2185,85.494455
+greedy_step,nnls,catboost_full,catboost_full=1.0014,0.0,86.412196
+greedy_try_lgbm_full,nnls,catboost_full+lgbm_full,catboost_full=0.6739;lgbm_full=0.3272,0.0,86.163658
+greedy_try_lgbm_num,nnls,catboost_full+lgbm_num,catboost_full=0.8041;lgbm_num=0.1974,0.0,86.034982
+greedy_try_lgbm_full_w,nnls,catboost_full+lgbm_full_w,catboost_full=0.7593;lgbm_full_w=0.2418,0.0,86.259471
+greedy_try_catboost_full_w,nnls,catboost_full+catboost_full_w,catboost_full=0.9577;catboost_full_w=0.0438,0.0,86.438464
+greedy_try_txt_ridge,nnls,catboost_full+txt_ridge,catboost_full=1.0014;txt_ridge=0.0000,0.0,86.412196
+greedy_try_lgbm_full,nnls,catboost_full+lgbm_num+lgbm_full,catboost_full=0.6126;lgbm_num=0.1642;lgbm_full=0.2245,0.0,85.939364
+greedy_try_lgbm_full_w,nnls,catboost_full+lgbm_num+lgbm_full_w,catboost_full=0.6666;lgbm_num=0.1753;lgbm_full_w=0.1595,0.0,85.986244
+greedy_try_catboost_full_w,nnls,catboost_full+lgbm_num+catboost_full_w,catboost_full=0.7580;lgbm_num=0.1975;catboost_full_w=0.0460,0.0,86.061269
+greedy_try_txt_ridge,nnls,catboost_full+lgbm_num+txt_ridge,catboost_full=0.8041;lgbm_num=0.1974;txt_ridge=0.0000,0.0,86.034982
+greedy_try_lgbm_full_w,nnls,catboost_full+lgbm_num+lgbm_full+lgbm_full_w,catboost_full=0.6079;lgbm_num=0.1637;lgbm_full=0.1986;lgbm_full_w=0.0311,0.0,85.95826
+greedy_try_catboost_full_w,nnls,catboost_full+lgbm_num+lgbm_full+catboost_full_w,catboost_full=0.5995;lgbm_num=0.1644;lgbm_full=0.2236;catboost_full_w=0.0139,0.0,85.96164
+greedy_try_txt_ridge,nnls,catboost_full+lgbm_num+lgbm_full+txt_ridge,catboost_full=0.6126;lgbm_num=0.1642;lgbm_full=0.2245;txt_ridge=0.0000,0.0,85.939364
