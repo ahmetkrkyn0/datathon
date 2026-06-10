@@ -1,2 +1,4 @@
 tarih,model_aciklama,commit_hash,cv_mse_mean,cv_mse_std,recency_weighted_oof_mse,public_lb_mse,gap,esik_durumu,test_uretim_yolu,secildi
 2026-06-10,lgbm_full,,77.033677,2.730661,87.266319,,,,fold-bagging (15 model),False
+2026-06-10,catboost_full,,76.302545,2.688119,86.414935,,,SUB-1 (safe tek-model),fold-bagging (15 model),True
+2026-06-10,blend,,75.752422,3.023803,85.494455,,,SUB-2 (ensemble blend),OOF-stack (recency-weighted),True
