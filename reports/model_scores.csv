@@ -1,0 +1,2 @@
+model,cv_mse_mean,cv_mse_std,recency_weighted_oof_mse,weighted_training,note
+lgbm_full_w,78.307989,2.956506,88.01567,True,"lgbm_full_w = lgbm_full FULL matris + AYNI HP, tek fark recency sample_weight (egitim ve eval_set early-stopping). KARAR METRIGI recency_weighted_oof_mse =88.0157 (lgbm_full 87.2663 ile karsilastir). Unweighted CV =78.3080 (agirlikli egitim unweighted'i bozabilir; KARAR DEGIL). Fold-safe: w kovaryat-only (graduation_year), hedefe dokunmaz."
