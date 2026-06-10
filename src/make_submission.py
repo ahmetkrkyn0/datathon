@@ -33,10 +33,12 @@ SAMPLE_SUB_PATH = cv.DATA_DIR / "sample_submission.csv"
 SUBMISSIONS_LOG_PATH = cv.REPORTS_DIR / "submissions_log.csv"
 
 # submissions_log.csv sema (mevcut basliga recency_weighted_oof_mse eklenir; idempotent upsert).
+# esik_durumu SADECE cv.gap_status ciktisi (yesil/sari/kirmizi) icindir; serbest metin 'not'a.
+# gap = public_lb_mse - recency_weighted_oof_mse (karar metrigi rw-OOF; review H1).
 LOG_COLS = [
     "tarih", "model_aciklama", "commit_hash", "cv_mse_mean", "cv_mse_std",
     "recency_weighted_oof_mse", "public_lb_mse", "gap", "esik_durumu",
-    "test_uretim_yolu", "secildi",
+    "test_uretim_yolu", "secildi", "not",
 ]
 
 
@@ -106,6 +108,7 @@ def log_submission(model: str, recency_mse: float) -> None:
         "esik_durumu": "",
         "test_uretim_yolu": "fold-bagging (15 model)",
         "secildi": False,
+        "not": "",
     }
     new = pd.DataFrame([row], columns=LOG_COLS)
     if SUBMISSIONS_LOG_PATH.exists():
