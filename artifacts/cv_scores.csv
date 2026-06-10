@@ -1,5 +1,5 @@
 model,cv_mse_mean,cv_mse_std,best_iteration_mean
-blend,74.606973,2.8389,0.0
+blend,74.480571,2.826289,0.0
 catboost_full,76.302545,2.688119,1133.27
 catboost_full_w,77.782137,2.977582,1015.93
 e5_ridge,140.158319,2.242015,0.0

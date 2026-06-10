@@ -42,6 +42,13 @@ def _is_sub1_eligible(model: str) -> bool:
         return False
     if model.endswith("_w"):  # recency-weighted varyant (elendi; SUB-1 sade-unweighted olmali)
         return False
+    if model.endswith("_h"):  # Huber varyanti (lgbm_full_h): catboost_full ile rw farki PAIRED'de
+        return False          # GURULTU (7/15, t=-0.44, p=0.67) -> esitlikte yapisal-farkli incumbent
+        # kazanir (CLAUDE.md: "cv farki <0.25*std ise birini bilerek daha basit/farkli tut").
+        # SUB-1 = catboost_full (blend lgbm-agirlikli; CatBoost ordered-boosting yapisal cesitlilik
+        # + bit-repro sicil). lgbm_full_h SUB-2 blend uyesidir. Bkz reports/ROBUST_LOSS_LEVER.md.
+    if model in ("mm", "e5_ridge"):  # neural/embedding meta-feature: tek-model SUB-1 adayi degil
+        return False
     return True
 
 

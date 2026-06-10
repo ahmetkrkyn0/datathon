@@ -1,4 +1,4 @@
 tarih,model_aciklama,commit_hash,cv_mse_mean,cv_mse_std,recency_weighted_oof_mse,public_lb_mse,gap,esik_durumu,test_uretim_yolu,secildi,not
 2026-06-10,lgbm_full,,77.033677,2.730661,87.266319,87.61,0.343681,yesil,fold-bagging (15 model),False,gap = public - rw_OOF (karar metrigi recency-weighted); |0.34| <= 1.5*std=4.10 -> recency kalibrasyonu LB ile teyit (saglikli)
 2026-06-10,catboost_full,,76.302545,2.688119,86.414935,,,,fold-bagging (15 model),True,SUB-1 (safe tek-model)
-2026-06-10,blend,,74.606973,2.8389,84.239278,,,,OOF-stack (recency-weighted),True,SUB-2 (ensemble blend)
+2026-06-10,blend,,74.480571,2.826289,84.099142,,,,OOF-stack (recency-weighted),True,SUB-2 (ensemble blend)

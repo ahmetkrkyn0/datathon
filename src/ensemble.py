@@ -39,7 +39,21 @@ CANDIDATE_POOL = [
     "catboost_full", "catboost_full_w", "txt_ridge",
     "e5_ridge",  # TIER-3 KABUL EDILDI (asagidaki nota bak) -> kalici blend uyesi.
     "mm",        # TIER-3 KABUL EDILDI (asagidaki MM nota bak) -> kalici blend uyesi.
+    "lgbm_full_h",  # TIER-3 KABUL EDILDI (asagidaki HUBER nota bak) -> kalici blend uyesi.
 ]
+# TIER-3 KABUL NOT (lgbm_full_h): lgbm_full'un Huber(alpha=5) robust-loss varyanti (src/lgbm_full_h.py).
+# MEKANIZMA: alt-kuyruk surprizleri (ex-ante ayirt edilemez dusuk-y satirlar; iki-asama Bayes kaniti
+# reports/LOW_TAIL_LEVER.md) L2 egitiminde karesel gradyanla kutlenin fit'ini zehirliyor; Huber bunu
+# gradyan-kapatmayla engeller. Standalone rw 86.3222 (L2 ikizi 87.2663, -0.944; en dusuk tek-model rw).
+# Blend katkisi 84.2393 -> 84.0991 (-0.140); kucuk AMA PAIRED-ANLAMLI (13/15 hucre, t=-3.825,
+# p=1.9e-3, 5000-ornek bootstrap %95 CI [-0.264,-0.018] tamamen sifir-alti) — yil-etkilesimi gibi
+# gurultu-bandi adaylarin (p=0.094, CI sifiri kapsar) reddedildigi AYNI testten net ayrisir.
+# Ekleme-vs-ikame olculdu: ekle 84.0991 / lgbm_full yerine ikame 84.1099 (es; additive e5/mm emsali).
+# CATBOOST-HUBER REDDEDILDI: Huber:delta=5 rw 104.18 / delta=8 rw 107.98 (L2 86.41'e karsi felaket;
+# CatBoost Huber implementasyonu bu butcede underfit) -> kurtarma denemesi HP-balikciligi olur, yok.
+# SUB-1 NOT: lgbm_full_h (86.32) vs catboost_full (86.41) farki paired'de GURULTU (7/15, t=-0.44,
+# p=0.67) -> esitlikte yapisal-farkli incumbent kazanir (CLAUDE.md); SUB-1 catboost_full KALIR
+# (finalize_submissions _h dislamasi). Detay: reports/ROBUST_LOSS_LEVER.md.
 # TIER-3 KABUL NOT (mm): XLM-R-large + tabular NN MULTIMODAL (FARKLI fonksiyon sinifi; GPU/Colab
 # colab_mm_multimodal.ipynb, bizim folds.parquet repeat-0 5-fit). Standalone unw-OOF 83.30 / rw-OOF
 # 94.82 (tek basina catboost_full 86.41'den zayif AMA ORTOGONAL: corr e5=0.727, txt=0.690; GBDT'lere
