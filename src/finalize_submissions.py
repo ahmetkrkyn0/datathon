@@ -26,10 +26,29 @@ import cv
 import make_submission as ms
 
 
+# SUB-1 (CAPA/safe) yalniz GERCEK tek guclu GBDT base modelinden secilir. Ledger'da ayrica
+# tureyen/elenmis adaylar var (blend, blend_p100 post-process, txt_ridge* metin alt-modelleri,
+# *_w recency varyantlari). Bunlar SUB-1 havuzunda OLMAMALI -> acik PREFIX-DISLAMA (robust).
+#   - "blend"      : ensemble (SUB-2'nin kendisi)
+#   - "blend_p100" : iki-asama post-process (LEVER2, elendi) — tek-model DEGIL
+#   - "txt_ridge*" : metin alt-modeli (zayif standalone; sadece blend bileseni)
+#   - "*_w"        : recency-weighted egitim varyanti (rw-OOF'u DUSURMEDI, elendi; bilerek SUB-1 disi)
+SUB1_EXCLUDE_PREFIXES = ("blend", "txt_ridge")
+
+
+def _is_sub1_eligible(model: str) -> bool:
+    """SUB-1 (sade tek GBDT) adayligi: turetilmis/elenmis satirlari (blend*/txt_ridge*/*_w) ele."""
+    if model.startswith(SUB1_EXCLUDE_PREFIXES):
+        return False
+    if model.endswith("_w"):  # recency-weighted varyant (elendi; SUB-1 sade-unweighted olmali)
+        return False
+    return True
+
+
 def _pick_from_ledger():
     df = pd.read_csv(cv.REPORTS_DIR / "model_scores.csv")
-    singles = df[df["model"] != "blend"].copy()
-    assert not singles.empty, "model_scores.csv'de tek-model yok."
+    singles = df[df["model"].map(_is_sub1_eligible)].copy()
+    assert not singles.empty, "model_scores.csv'de SUB-1 uygun tek-model yok."
     best_single = singles.sort_values("recency_weighted_oof_mse").iloc[0]["model"]
     has_blend = (df["model"] == "blend").any()
     return df, str(best_single), has_blend
@@ -93,9 +112,10 @@ def main() -> None:
             "recency_weighted_oof_mse": round(_rw(model), 6),
             "public_lb_mse": "",
             "gap": "",
-            "esik_durumu": role,
+            "esik_durumu": "",  # cv.gap_status ciktisi icin rezerve; public LB sonucu girilince doldurulur
             "test_uretim_yolu": "fold-bagging (15 model)" if model != "blend" else "OOF-stack (recency-weighted)",
             "secildi": True,
+            "not": role,
         })
     _log_selected(rows)
     print(f"[final] reports/submissions_log.csv guncellendi: 2 final secildi=True.")
