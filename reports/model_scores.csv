@@ -6,3 +6,4 @@ lgbm_full,77.033677,2.730661,87.266319,False,base (ensemble backfill)
 lgbm_full_w,78.307989,2.956506,88.01567,True,base (ensemble backfill)
 lgbm_num,81.702394,2.933211,92.815376,False,base (ensemble backfill)
 txt_ridge,147.485102,2.036693,168.017945,False,base (ensemble backfill)
+txt_ridge_wc,144.097318,2.335609,163.885813,False,"word+char birlesik (text_strong.py); STEP2 DENENDI: havuza eklenince blend nested rw-OOF 85.49->85.38 (-0.11, 0.25*std gurultu bandi icinde, corr txt_ridge 0.974) -> REDDEDILDI (nihai blend DISI, Occam/kabul-kapisi)"

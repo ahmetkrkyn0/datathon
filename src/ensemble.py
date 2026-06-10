@@ -38,6 +38,11 @@ CANDIDATE_POOL = [
     "lgbm_full", "lgbm_num", "lgbm_full_w",
     "catboost_full", "catboost_full_w", "txt_ridge",
 ]
+# STEP2 NOT: txt_ridge_wc (word+char birlesik metin, text_strong.py) DENENDI ve havuza eklenince
+# blend nested rw-OOF yalniz 85.49->85.38 (-0.11) dustu = 0.25*std (~0.75) GURULTU BANDI ICINDE
+# (corr(txt_ridge)=0.974; sadece txt_ridge'i degistirip 0.09 agirlik aldi). CLAUDE.md kabul kapisi
+# marjinal ~0.1 MSE kazancini REDDEDER (Occam + sifir-overfit) -> nihai blend'e ALINMADI. Artefakt
+# + ledger satiri dokumantasyon icin tutuldu. Yeniden eklemek: yukaridaki listeye "txt_ridge_wc" ekle.
 ENSEMBLE_REPORT_PATH = cv.REPORTS_DIR / "ensemble_report.csv"
 GREEDY_EPS = 1e-6  # iyilesme bu kadar bile yoksa modeli ekleme (Occam)
 
