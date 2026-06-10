@@ -38,6 +38,13 @@ CANDIDATE_POOL = [
     "lgbm_full", "lgbm_num", "lgbm_full_w",
     "catboost_full", "catboost_full_w", "txt_ridge",
 ]
+# FORENSICS NOT: txt_rich (zengin TF-IDF word(1-3)+char(2-6) nested-OOF metin, src/text_rich.py)
+# DENENDI (C3 reversal: adversarial-verify "metin redundant" tezini curuttu -> metin etkilesimli +
+# mevcut txt_ridge metni doyurmamis, zengin TF-IDF num tabaninda -0.87 uw marjinal verdi). Standalone
+# rw-OOF 162.27 (txt_ridge 168.02'den GUCLU). AMA havuza eklenince ridge_pos blend nested rw-OOF
+# 85.4945->85.4116 (-0.083; txt_ridge'i 0.099 agirlikla degistirir, net ~0) = 0.25*std (~0.76) GURULTU
+# BANDI ICINDE -> REDDEDILDI (Occam/kabul-kapisi, nihai blend DISI). GBDT etkilesimleri metin sinyalini
+# zaten yakaliyor. Artefakt+ledger dokuman icin tutuldu. Yeniden denemek: asagiya "txt_rich" ekle.
 # LEVER3 NOT: txt_svd_gbdt (TF-IDF -> fold-ici TruncatedSVD(80) -> LGBM, src/txt_svd_gbdt.py)
 # DENENDI. Standalone rw-OOF 182.66 (txt_ridge 168.02'den ZAYIF; SVD %19 varyans -> kayipli).
 # Havuza eklenince blend nested rw-OOF 85.4945->85.5123 (+0.02, IYILESME YOK; txt_ridge agirligini

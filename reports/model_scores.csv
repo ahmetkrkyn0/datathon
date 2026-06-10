@@ -7,6 +7,7 @@ histgbr_full,78.093989,2.719122,88.539994,False,"histgbr_full = HistGradientBoos
 lgbm_full,77.033677,2.730661,87.266319,False,base (ensemble backfill)
 lgbm_full_w,78.307989,2.956506,88.01567,True,base (ensemble backfill)
 lgbm_num,81.702394,2.933211,92.815376,False,base (ensemble backfill)
+txt_rich,143.62179,2.248058,162.272293,False,"FORENSICS lever: zengin word(1, 3)+char(2, 6) nested-OOF metin (C3 reversal). standalone rw=162.2723. blend karari ensemble.py'de."
 txt_ridge,147.485102,2.036693,168.017945,False,base (ensemble backfill)
 txt_ridge_wc,144.097318,2.335609,163.885813,False,"word+char birlesik (text_strong.py); STEP2 DENENDI: havuza eklenince blend nested rw-OOF 85.49->85.38 (-0.11, 0.25*std gurultu bandi icinde, corr txt_ridge 0.974) -> REDDEDILDI (nihai blend DISI, Occam/kabul-kapisi)"
 txt_svd_gbdt,160.458712,2.947404,182.658211,False,"txt_svd_gbdt = TF-IDF(word 1-2gram) -> fold-ici TruncatedSVD(80) -> LGBM (nonlineer metin, src/txt_svd_gbdt.py). LEVER3 DENENDI: standalone rw-OOF 182.66 (txt_ridge 168.02'den zayif; SVD %19 varyans kayipli); havuza eklenince blend nested rw-OOF 85.49->85.51 (+0.02 iyilesme YOK, txt_ridge agirligini yiyor corr 0.886) -> REDDEDILDI (Occam/kabul-kapisi, nihai blend DISI). Fold-safe (vectorizer+SVD dis-fold train'inde, random_state=42)."

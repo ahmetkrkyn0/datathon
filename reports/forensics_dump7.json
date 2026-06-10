@@ -1,0 +1,12 @@
+{
+  "intermodel_disagree_std": 1.5252994403101618,
+  "ensemble_resid_std": 8.722595565305138,
+  "irreducible_frac_est": 0.9694213189404647,
+  "text_headroom": {
+    "mse_num": 88.1573657807202,
+    "mse_proj": 82.44219055056514,
+    "mse_rich": 82.68580397300003,
+    "mse_both": 81.57428434794764,
+    "rich_marginal_over_proj": -0.8679062026175046
+  }
+}
