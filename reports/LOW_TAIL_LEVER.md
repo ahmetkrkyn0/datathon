@@ -54,6 +54,26 @@ sayacı kuruldu:
 kalıpları çoktan işliyor.** Regex residual'da iz bırakmıyor → yeni bilgi yok → eklemek redundant kolon
 (Occam reddeder). mm zaten alt bantta en çok yardım eden üyeydi (−2.6 MSE) — metin modalitesi tükenmiş.
 
+## Kaldıraç C — iki-aşamalı alt-kuyruk düzeltmesi (p100 analoğu) → ELENDİ (Bayes-tutarlılık)
+
+En hedefli saldırı: fold-safe P(y≤50) sınıflandırıcı (LGBM-binary, lgbm_full matrisi, repeat-0 OOF)
++ `pred' = clip(blend − β·P)` düzeltmesi. **Oracle muazzam:** y≤50 rw-ağırlık payı %6.55 × bias²
+(14.03²) ≈ **12.9 rw puanı** (mükemmel bilgiyle 84.2→71.3!). Sınıflandırıcı güçlü: **AUC 0.910**.
+
+| β | rw-OOF | delta |
+|---|---|---|
+| 0 (mevcut) | 84.2393 | — |
+| 2 | 84.2723 | +0.033 |
+| 4 | 84.4233 | +0.184 |
+| 8 | 85.0791 | +0.840 |
+| 14 | 86.9474 | +2.708 |
+
+**Her β>0 kötüleştiriyor — optimum tam sıfır düzeltme.** Yorum: blend zaten E[y|x] = P·μ_düşük +
+(1−P)·μ_yüksek karışımını içeriyor; sınıflandırıcının P'si AYNI feature'lardan geldiği için yüksek-P
+satırları blend zaten düşük tahmin etmiş. −14 bias'ı yaratan satırlar **ex-ante ayırt edilemeyen**
+sürprizler — bias düzeltilebilir bir hata değil, kısmi-bilgiyle MSE-optimal davranışın kendisi.
+(p100 üst-kütle analoğunda da aynı ders: oracle −3.57'nin sadece %5.6'sı gerçekleşmişti; burada %0.)
+
 ## Augment (sentetik balance) — DENENMEDİ (ilkesel ret)
 
 SMOTE/mixup/LLM ile sentetik alt-kuyruk: sürekli hedefte uydurma (x,y) çiftleri üretir → sızıntısız
