@@ -38,6 +38,11 @@ CANDIDATE_POOL = [
     "lgbm_full", "lgbm_num", "lgbm_full_w",
     "catboost_full", "catboost_full_w", "txt_ridge",
     "e5_ridge",  # TIER-3 KABUL EDILDI (asagidaki nota bak) -> kalici blend uyesi.
+    # "mm",      # TIER-3 multimodal (XLM-R-large + tabular NN, FARKLI fonksiyon sinifi). GATE-BEKLER:
+    #            # artefakt colab_mm_multimodal.ipynb (GPU, bizim folds.parquet repeat-0) -> artifacts/
+    #            # oof_mm.npy + test_mm.npy; src/mm_blend.py denetler; src/mm_gate.py PAIRED-TEST (e5
+    #            # olcut) yargilar. Yalniz paired-anlamli GECERSE bu satiri AC + ensemble.py calistir
+    #            # (SUB-2 e5+mm). GECMEZSE temiz reddet (mm EKLENMEZ; SUB-2 e5 blend 84.85 degismez).
 ]
 # TIER-3 KABUL NOT (e5_ridge): FROZEN multilingual-e5-large (1024-dim) -> nested-OOF Ridge(alpha=0.1,
 # src/e5_ridge.py; emb GPU/Colab artifacts/emb_*.npy). Standalone rw-OOF 158.46 (tum onceki metin
