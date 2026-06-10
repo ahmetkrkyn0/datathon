@@ -38,6 +38,11 @@ CANDIDATE_POOL = [
     "lgbm_full", "lgbm_num", "lgbm_full_w",
     "catboost_full", "catboost_full_w", "txt_ridge",
 ]
+# LEVER3 NOT: txt_svd_gbdt (TF-IDF -> fold-ici TruncatedSVD(80) -> LGBM, src/txt_svd_gbdt.py)
+# DENENDI. Standalone rw-OOF 182.66 (txt_ridge 168.02'den ZAYIF; SVD %19 varyans -> kayipli).
+# Havuza eklenince blend nested rw-OOF 85.4945->85.5123 (+0.02, IYILESME YOK; txt_ridge agirligini
+# yiyor, corr 0.886 fazla redundant) -> REDDEDILDI (Occam/kabul-kapisi, nihai blend DISI). Artefakt
+# + ledger dokuman icin tutuldu. Yeniden denemek: yukaridaki listeye "txt_svd_gbdt" ekle.
 # LEVER1 NOT: histgbr_full (HistGradientBoosting, UCUNCU GBDT ailesi, src/histgbr_full.py) DENENDI.
 # Standalone rw-OOF 88.54 (lgbm_full 87.27 / catboost_full 86.41'den ZAYIF). Havuza eklenince
 # ridge_pos blend ona 0.0000 AGIRLIK verdi ve nested rw-OOF 85.4945->85.5560 (+0.06, GURULTU,
