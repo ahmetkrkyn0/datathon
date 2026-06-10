@@ -1,0 +1,27 @@
+{
+  "base_blend_rw_oof": 85.494455,
+  "wall": 85.4945,
+  "gate": 84.7386,
+  "nested_cal_rw_oof": 86.753941,
+  "delta": 1.259486,
+  "unweighted_cv": 76.715033,
+  "unweighted_cv_std": 2.948144,
+  "min_cell": 300,
+  "year_counts": {
+    "2018": 265,
+    "2019": 1302,
+    "2020": 1307,
+    "2021": 1265,
+    "2022": 1308,
+    "2023": 1309,
+    "2024": 1287,
+    "2025": 1165,
+    "2026": 792
+  },
+  "thin_years_global_fallback": [
+    2018
+  ],
+  "passed_gate": false,
+  "decision": "ELENDI (gurultu bandi, Occam/sifir-overfit)",
+  "note": "Per-year isotonic (OOF->hedef) nested fold-safe + thin-cell GLOBAL fallback. KARAR nested rw-OOF; public LB'ye BAKILMADI."
+}
