@@ -38,6 +38,12 @@ CANDIDATE_POOL = [
     "lgbm_full", "lgbm_num", "lgbm_full_w",
     "catboost_full", "catboost_full_w", "txt_ridge",
 ]
+# LEVER1 NOT: histgbr_full (HistGradientBoosting, UCUNCU GBDT ailesi, src/histgbr_full.py) DENENDI.
+# Standalone rw-OOF 88.54 (lgbm_full 87.27 / catboost_full 86.41'den ZAYIF). Havuza eklenince
+# ridge_pos blend ona 0.0000 AGIRLIK verdi ve nested rw-OOF 85.4945->85.5560 (+0.06, GURULTU,
+# IYILESME YOK). 0.25*std (~0.76) kapisindan geri donmek soyle dursun blend'i KOTULESTIRDI ->
+# REDDEDILDI (Occam + sifir-overfit). Artefakt (oof/test_histgbr_full.npy) + ledger satiri
+# dokumantasyon icin tutuldu. Yeniden denemek: yukaridaki listeye "histgbr_full" ekle.
 # STEP2 NOT: txt_ridge_wc (word+char birlesik metin, text_strong.py) DENENDI ve havuza eklenince
 # blend nested rw-OOF yalniz 85.49->85.38 (-0.11) dustu = 0.25*std (~0.75) GURULTU BANDI ICINDE
 # (corr(txt_ridge)=0.974; sadece txt_ridge'i degistirip 0.09 agirlik aldi). CLAUDE.md kabul kapisi
