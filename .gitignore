@@ -20,3 +20,5 @@ Thumbs.db
 *.log
 *.tmp
 data/cache/
+
+copy/colab_finetune_embeddings.ipynb
