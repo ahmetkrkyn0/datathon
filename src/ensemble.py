@@ -37,7 +37,20 @@ import cv
 CANDIDATE_POOL = [
     "lgbm_full", "lgbm_num", "lgbm_full_w",
     "catboost_full", "catboost_full_w", "txt_ridge",
+    "e5_ridge",  # TIER-3 KABUL EDILDI (asagidaki nota bak) -> kalici blend uyesi.
 ]
+# TIER-3 KABUL NOT (e5_ridge): FROZEN multilingual-e5-large (1024-dim) -> nested-OOF Ridge(alpha=0.1,
+# src/e5_ridge.py; emb GPU/Colab artifacts/emb_*.npy). Standalone rw-OOF 158.46 (tum onceki metin
+# kanallarindan GUCLU: txt_ridge 168.02, txt_rich 162.27). Havuza eklenince ridge_pos blend nested
+# rw-OOF 85.4945 -> 84.8464 (delta -0.648; e5 agirlik 0.1527, txt_ridge'i 0.0444->0.0000 ETTI).
+# LITERAL KABUL KAPISI (0.25*std, std=3.0238 -> band 0.756) ile -0.648 GECMEZDI. ANCAK kapinin std'si
+# blend'in MUTLAK-MSE seviye-varyansidir (yanlis olcut); PAIRED model-vs-model delta'nin kendi std'si
+# 0.309 (4x daha siki). Paired testte e5 kazanci KESIN ANLAMLI: 15/15 CV hucresi iyilesti, paired
+# t=-8.11 (p=1.2e-6), 5000-ornek row-bootstrap %95 CI [-1.01,-0.29] tamamen sifir-alti. Substitution
+# DEGIL: GBDT-only blend 85.493 -> +e5 84.862 (NET-YENI +0.631), +txt yalniz -0.001 (txt zaten
+# redundant). FORENSICS gurultu-tabani tezi BURADA GECERSIZ (o GBDT-vs-GBDT artigi; e5 ortogonal
+# frozen-embedding metin modalitesi). Karar: 3 high-conf skeptik + bagimsiz paired-dogrulama + kullanici
+# onayi -> KABUL. SUB-2 blend artik e5_ridge ICERIR. Detay: reports/E5_EMBEDDING_LEVER.md.
 # FORENSICS NOT: txt_rich (zengin TF-IDF word(1-3)+char(2-6) nested-OOF metin, src/text_rich.py)
 # DENENDI (C3 reversal: adversarial-verify "metin redundant" tezini curuttu -> metin etkilesimli +
 # mevcut txt_ridge metni doyurmamis, zengin TF-IDF num tabaninda -0.87 uw marjinal verdi). Standalone
