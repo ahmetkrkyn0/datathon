@@ -15,8 +15,20 @@ import cv
 
 CV_SCORES_PATH = cv.ARTIFACTS_DIR / "cv_scores.csv"
 CV_LOG_PATH = cv.REPORTS_DIR / "cv_log.csv"
+# Faz 06 KARAR DEFTERI: tum base/ensemble adaylari icin recency-weighted OOF (KARAR METRIGI,
+# review H1) yan yana. cv_scores.csv unweighted CV iyimser oldugundan secim DAIMA buradan.
+MODEL_SCORES_PATH = cv.REPORTS_DIR / "model_scores.csv"
 
 CV_SCORES_COLS = ["model", "cv_mse_mean", "cv_mse_std", "best_iteration_mean"]
+MODEL_SCORES_COLS = [
+    "model",
+    "cv_mse_mean",               # unweighted compute_cv_mse(oof) — fold-denge/siralama (iyimser)
+    "cv_mse_std",
+    "recency_weighted_oof_mse",  # KARAR METRIGI (review H1): private-durust tahmin
+    "weighted_training",         # base model recency sample_weight ile mi egitildi
+    "note",
+]
+
 CV_LOG_COLS = [
     "model",
     "cv_mse_mean",  # = compute_cv_mse(oof) mean (avg-oof; cv_scores.csv ile ayni, DoD-4)
@@ -51,6 +63,30 @@ def save_oof_test(model: str, oof: np.ndarray, test: np.ndarray) -> None:
     cv.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     np.save(cv.ARTIFACTS_DIR / f"oof_{model}.npy", np.asarray(oof, dtype=float))
     np.save(cv.ARTIFACTS_DIR / f"test_{model}.npy", np.asarray(test, dtype=float))
+
+
+def log_model_score(
+    model: str,
+    cv_mse_mean: float,
+    cv_mse_std: float,
+    recency_weighted_oof_mse: float,
+    weighted_training: bool = False,
+    note: str = "",
+) -> pd.DataFrame:
+    """Faz 06 karar defteri (reports/model_scores.csv) idempotent upsert. KARAR METRIGI =
+    recency_weighted_oof_mse (review H1); unweighted CV iyimser, secim DAIMA buradan."""
+    return _upsert(
+        MODEL_SCORES_PATH,
+        MODEL_SCORES_COLS,
+        dict(
+            model=model,
+            cv_mse_mean=round(float(cv_mse_mean), 6),
+            cv_mse_std=round(float(cv_mse_std), 6),
+            recency_weighted_oof_mse=round(float(recency_weighted_oof_mse), 6),
+            weighted_training=bool(weighted_training),
+            note=note,
+        ),
+    )
 
 
 def write_cv_score(model: str, cv_mse_mean: float, cv_mse_std: float, best_iteration_mean: float) -> None:
