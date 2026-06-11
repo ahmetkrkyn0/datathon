@@ -242,6 +242,31 @@ gerçekten yeni öneri fold-safe ölçüldü:
 çekilecek sinyal yok; tavan o satırlardan değil, feature'dan öngörülemeyen %3.4 uç-satırdan geliyor.
 Her iki yeni taktik de eşiği geçemedi. Blend 84.0212 değişmedi. Artefaktsız (Occam).
 
+### Ek (kullanıcı/arkadaş önerisi) — 10 elle-feature (metin örüntü + yapısal etkileşim) → RED (repeat-0 yanılttı, blend söndürdü)
+
+Arkadaş 10 hedef-bağımsız feature önerdi (4 metin: but-criticism regex, soft/hard ratio, potential-trap,
+buzzword-density; 6 yapısal: academic-bubble, market-rejection, ghost-coder, **t-shaped-std**,
+eager-incompetent, feedback-len). Hepsi y-bağımsız → fold-safe. FULL matrise eklenip lgbm_full_ht ile
+ölçüldü. **İki aşamalı disiplin (repeat-0 ablation → full-15 + blend paired-gate) kritikti:**
+
+**repeat-0 tekil ablation** (baz 86.6303): **`f_tshaped_std` −0.194** (en güçlü; teknik skor std = uzman
+vs jenerist), soft_hard/potential/eager/feedback ~−0.07, **market_rejection +0.093 ZARARLI**, academic_bubble
+0.00 (%0.6 seyrek), **TÜMÜ-10-birlikte +0.063** (feature'lar birbirini boğuyor). En umutlu ikisi blend-gate'e:
+
+| Aday | full-15 standalone | blend EKLE Δ | paired-gate (EKLE) |
+|---|---|---|---|
+| **f_tshaped_std** (tek) | **+0.087** (repeat-0 −0.194 BUHARLAŞTI) | +0.006 | **6/15, p=0.67, CI [−0.042,+0.053] → ELENDI** |
+| 5'li temiz set (market hariç) | +0.061 | +0.002 | 8/15, p=0.89, CI [−0.047,+0.051] → ELENDI |
+
+**RED — ve metodolojik ders altın değerinde:** `f_tshaped_std` repeat-0'da −0.194 ile EN parlak aday
+gibi göründü; full-15'te **+0.087'ye döndü** (seçim-gürültüsü, Sonda-3 frequency-encoding tuzağının
+ikizi) ve blend'e net-yeni sinyal getirmedi (paired CI sıfırı kapsıyor). Mekanizma: t-shaped/soft-hard/
+potential bilgisi mevcut üyelerde ZATEN var — GBDT'ler ham teknik skorları görüyor, txt_ridge+e5 metni
+okuyor. Elle-feature, blend'in başka kanallardan aldığı bilgiyi tekrar ediyor (Faz-4 "composites/
+interactions zararlı" + 3.tur txt_rich/lexicon-redundans emsali). **Kullanıcının "tek-model değil
+blend'e bak" sezgisi bu RED'i kurtardı** — repeat-0'a bakıp kabul etseydik gürültü kabul edilirdi.
+Blend 84.0212 değişmedi. Artefaktsız (Occam).
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
