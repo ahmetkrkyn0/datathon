@@ -288,6 +288,24 @@ ama iki gürültülü tahminin farkı = daha gürültülü → split-kalitesini 
 gerçek ama metin her satırda aynı pozitif şablonla yazılı → "yalan mı" sorusu ancak y bilinirse cevaplanır
 = sızıntı. Gözle "mantıklı, ekleyelim" yerine fold-safe ölçüm serabı yakaladı. Blend 84.0212 değişmedi.
 
+### Ek (kullanıcı önerisi) — 340 kötü satırın SEGMENT analizi → pattern SERAP (kalibrasyon çürüttü)
+
+Kullanıcı "uç-yalanlar hariç orta-bölgede pattern var mı" diye sordu. 340 satır 4 segmente bölündü
+(hata-yönü × büyüklük): asiri_orta(20-30) 160, asiri_uc(>30) 29, dusuk_orta 130, dusuk_uc 21. Segment
+imzası (z-skor vs popülasyon) GÜÇLÜ göründü: **dusuk-tahmin (y yüksek, pred düşük) segmentlerinde
+project_quality_score −0.81/−1.19σ, technical_interview −0.56/−1.02σ, communication −0.38/−0.74σ.**
+"Kâğıtta zayıf ama gerçekte başarılı" profili gibi durdu.
+
+**KALİBRASYON TESTİ pattern'i SERAP olarak çürüttü** (feature ölçümüne bile gerek kalmadı): "düşük
+project_quality olan TÜM satırlarda model sistematik underpredict ediyor mu?" → **HAYIR**. project_quality
+5 kuantil diliminde mean_resid = {+1.04, −0.21, +0.15, −0.27, −0.12} ≈ 0 (technical_interview da ±0.27).
+**Model HER skor-diliminde mükemmel kalibre.** Segment imzası bir TAUTOLOJİ: "düşük tahmin edilen satır
+= düşük skorlu" (model girdisine bakıp düşük diyor, doğru davranış); geriye-bakışta o azınlığın y'si
+yüksek çıkıyor ama düşük-skorluların %95'i zaten doğru tahmin ediliyor → "düşük-skorlu" flag'i %95
+yanlış-alarm. **Ders:** segment-imzası (geriye-bakış z-skoru) ≠ ileriye-dönük sinyal; kalibrasyon testi
+(her dilimde resid~0) bunu feature yapmadan elendi. İYİ HABER: kalibrasyon sıfır-overfit'in kanıtı —
+kötü satırlar sistematik kör-nokta değil, rastgele indirgenemez gürültü. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
