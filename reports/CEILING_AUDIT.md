@@ -165,6 +165,30 @@ ENVANTER DURUMU: 4. turla lokal-CPU düşük-EV kuyruğu KAPANDI. Açık kalan t
 kullanıcı koşusu bekliyor. Geçici probe scriptleri `src/_probe4_*.py` + artefaktları `_tmp_*`
 dokümantasyon sonrası temizlendi; kanonik pipeline / CANDIDATE_POOL / requirements.txt DEĞİŞMEDİ.
 
+### Ek (kullanıcı önerisi) — Hiyerarşik 2-aşamalı tahmin (coarse classification → bin-içi regresyon) → RED
+
+Kullanıcı fikri: "önce y'yi 10 gruba ayır, classification ile bin seç; sonra seçilen binde regresyon
+yap (ör. 60-70 bini → 66.7)". Sonda 1 HL-Gaussian'ın (soft-expectation, +12.22) akrabası AMA farklı:
+hard-routing + **bin-içi ayrı GBDT regresörü**. Fold-safe ölçüldü (binler fold-içi qcut9+==100=10 sınıf;
+aşama-1 ht-konfig multiclass classifier; aşama-2 her bin için Huber α=5 regresör, <200 satırlı binlerde
+global-huber fallback). **Sanity kontrolü mükemmel: düz-ht kontrol kolu repeat-0 rw 86.6303 birebir.**
+
+| Varyant | repeat-0 rw | delta vs 86.6303 |
+|---|---|---|
+| KONTROL (düz lgbm_full_ht) | 86.6303 | baz (sanity OK) |
+| **HARD (argmax bin → o binin regresörü)** | **127.82** | **+41.19** 💥 |
+| **SOFT (Σ P(bin)·reg_bin)** | **91.31** | **+4.68** |
+
+**RED — ve mekanizma öğretici:** (a) HARD felaketi (+41) tam da en-kötü-satırların feature-ayırt-edilemez
+oluşundan (top-50 z-skoru ~0): classifier y=0 satırını feature'ına bakıp popülasyon-tipik orta bine
+atıyor → o binin regresörü ~76 tahmin ediyor → ±40-60 taban-hata. Tek yanlış-routing, doğru bin-içi
+regresyonu yok ediyor. Classification, sürekli hedefe **sert bilgi-darboğazı** koyuyor ve darboğaz tam
+uç satırlarda yanılıyor. (b) SOFT yumuşatması taban-hatayı siliyor (127→91) ama bin-içi az-veri varyansı
+(~820 vs 8000 satır) + HL-Gaussian'a yakınsama yüzünden hâlâ +4.68. **Ders:** hiyerarşik tahmin
+modaliteler/rejimler GERÇEKTEN ayrıksa kazanır; burada hedef sürekli-düzgün ve bin'i belirleyen sinyal
+feature'larda zaten zayıf → classification, regresyonun işini kayıplı tekrar ediyor. Tek-aşama sürekli
+Huber, [0,100]'ü kesintisiz modelleyip belirsizlikte ortalamaya kaçıyor = MSE-optimal. Artefaktsız (Occam).
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
