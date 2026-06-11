@@ -306,6 +306,27 @@ yanlış-alarm. **Ders:** segment-imzası (geriye-bakış z-skoru) ≠ ileriye-d
 (her dilimde resid~0) bunu feature yapmadan elendi. İYİ HABER: kalibrasyon sıfır-overfit'in kanıtı —
 kötü satırlar sistematik kör-nokta değil, rastgele indirgenemez gürültü. Blend 84.0212 değişmedi.
 
+### Ek (kullanıcı önerisi) — Regex söz-dizimi pattern → nested-OOF model → soft-voting üyesi → 2 RED
+
+Kullanıcı "metindeki cevher/balon örüntülerini düz regex'le yakala (TF-IDF'in kaçırdığı kelime-SIRASI),
+nested-OOF modele çevir, blend'e (ridge_pos soft-voting) üye ekle, gücüne göre +/− puan" önerdi. Regex
+paleti y-siz (alan-bilgisi, lexicon ruhu). **Tanı: örüntüler CANLI** — daha-fazla (%46) y-farkı **−6.7**,
+övgü-ancak-negatif (%31) −3.6, potansiyel-tuzağı (%9.6) −1.9. İki varyant nested-OOF ridge (txt_ridge
+deseni; fold-safe) → blend 11. üye + paired-gate:
+
+| Varyant | standalone rw | blend EKLE Δ | paired-gate |
+|---|---|---|---|
+| **A saf-regex** (6 söz-dizimi pattern + ton/sayım) | 213.64 | +0.031 | 6/15, p=0.035, CI [−0.018,+0.080] → ELENDI |
+| **B regex×skor** (balon=övgü∧düşük-teknik, sessiz-cevher=nötr∧yüksek-skor) | 194.38 | +0.012 | 4/15, p=0.025, CI sıfırı kapsıyor → ELENDI |
+
+**RED — regex sinyali GERÇEK ama YENİ DEĞİL:** örüntüler tanıda canlıydı (−6.7'ye kadar) AMA o sinyal
+mevcut metin kanallarında ZATEN var — txt_ridge "daha fazla"yı TF-IDF görüyor, e5 embedding cümle-düzeyi
+söz-dizimini kodluyor. Regex bunların kaba/gürültülü alt-kümesini çıkarıyor → soft-voting düşük ağırlık
+verse de blend'e gürültü ekledi (kötüleşti). **Metin kanalının HER formu artık tüketildi:** TF-IDF
+word/char (txt_ridge/txt_rich/txt_ridge_wc), e5 embedding, lexicon-10, 10 elle-feature, ve şimdi regex
+söz-dizimi + regex×skor — hepsi denendi; çıkarılabilir metin sinyali e5+txt_ridge'de doygun. Mentor metni
+belirsiz (aynı kelimeler her y'de), keskinlik yeni bilgi getirmiyor. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
