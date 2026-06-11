@@ -74,6 +74,29 @@ Huber bilgisi havuzda lgbm_full_h ile zaten temsil ediliyor; metinsiz huber ikiz
 Artefakt + ledger satırı dokümantasyon için tutuldu (histgbr/txt_rich emsali); CANDIDATE_POOL DIŞI.
 Yeniden denemek: ensemble.py havuzuna "lgbm_num_h" ekle.
 
+## C3. LGBM_FULL_HT (sıkı-regularizasyon) → **KABUL** (gece vardiyası 2. kabulü)
+
+ÖNCEDEN-KAYITLI 12-konfig HP gridi (gate-kör, tek-yön değişimler, repeat-0): tek anlamlı yön
+**sıkılaştırma** çıktı — `leaves15_mc80` rw 87.16→86.63 (−0.53); diğer 11 konfig ya kötü ya gürültü.
+Post-hoc kombinasyon YAPILMADI. Full-15'te çürüme yok (−0.54) → seçilim-gürültüsü değil, gerçek etki:
+muhafazakâr anchor bile bu gürültü seviyesinde fazla kompleksmiş.
+
+| Model | unw-CV | rw-OOF |
+|---|---|---|
+| lgbm_full_h | 76.25 | 86.3222 |
+| **lgbm_full_ht (leaves=15, mc=80)** | **75.78** | **85.7810** (yeni en düşük tek-model) |
+
+**Blend:** EKLE 84.0991 → **84.0212** (−0.078; İKAME −0.051 ölçülüp elendi). Paired: **13/15,
+t=−4.211, p=8.7e-4, bootstrap CI [−0.1552, −0.0019]** — üç ölçüt de geçti. Dürüstlük notu: CI üst
+sınırı İNCE (−0.002); kabulü taşıyan şey hücre-tutarlılığı (std 0.072 — aynı büyüklükteki lgbm_num_h
+−0.074, std 0.099 tutarsızlıkla düşmüştü). Final ağırlıklar: ht 0.165 + h 0.134 (huber ailesi toplam
+~0.30), mm 0.237, lgbm_num 0.204.
+
+**SUB-1 kararı (kayıt):** ht standalone catboost'tan −0.64 önde AMA paired 11/15, t=−2.81, p=0.014 —
+kendi gate standardımıza göre tek-model üstünlüğü kanıtlanamaz; üstelik SUB-1'in amacı SİGORTA
+(blend lgbm-huber-ağırlıklı → maksimum-bağımsız CatBoost kalır). `finalize` dışlaması `_h/_ht`'ye
+genişletildi.
+
 ## D. CATBOOST-HUBER → ELENDİ (implementasyon underfit)
 
 | Konfig | repeat-0 rw-OOF |

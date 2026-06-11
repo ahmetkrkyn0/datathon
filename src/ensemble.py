@@ -40,7 +40,19 @@ CANDIDATE_POOL = [
     "e5_ridge",  # TIER-3 KABUL EDILDI (asagidaki nota bak) -> kalici blend uyesi.
     "mm",        # TIER-3 KABUL EDILDI (asagidaki MM nota bak) -> kalici blend uyesi.
     "lgbm_full_h",  # TIER-3 KABUL EDILDI (asagidaki HUBER nota bak) -> kalici blend uyesi.
+    "lgbm_full_ht",  # TIER-3 KABUL EDILDI (asagidaki HT nota bak) -> kalici blend uyesi.
 ]
+# TIER-3 KABUL NOT (lgbm_full_ht): lgbm_full_h + SIKI regularizasyon (num_leaves=15, min_child=80;
+# src/lgbm_full_ht.py). ONCEDEN-KAYITLI 12-konfig HP gridinin (gate-kor, tek-yon degisimler,
+# repeat-0 fold-safe) tek anlamli kazanani; post-hoc kombinasyon YAPILMADI. Full-15'te curume yok
+# (repeat-0 -0.53 -> full -0.54) -> etki gercek. Standalone rw 85.7810 = EN DUSUK tek-model
+# (lgbm_full_h 86.32, catboost_full 86.41). Blend EKLE 84.0991 -> 84.0212 (-0.078); paired-anlamli:
+# 13/15 hucre, t=-4.211, p=8.7e-4, bootstrap %95 CI [-0.1552,-0.0019] (ust sinir INCE ama sifir-alti;
+# kiyas: ayni buyuklukteki lgbm_num_h -0.074 tutarsizliktan dustu, 11/15 p=0.012 CI sifiri kapsar).
+# IKAME (h->ht, -0.051) olculup elendi; EKLE secildi (ridge redundansi yonetir). SUB-1 DEGISMEZ
+# (catboost_full; sigorta=maksimum-bagimsiz aile, finalize _h/_ht dislamasi). Gece vardiyasinin
+# diger 7 mekanizma sondasi (tweedie/GLS/cens-obj/dart/seedbag/lgbm_num_h/tabpfn-lokal) ELENDI
+# (reports/CEILING_AUDIT.md gece bolumu). Detay: reports/ROBUST_LOSS_LEVER.md.
 # TIER-3 KABUL NOT (lgbm_full_h): lgbm_full'un Huber(alpha=5) robust-loss varyanti (src/lgbm_full_h.py).
 # MEKANIZMA: alt-kuyruk surprizleri (ex-ante ayirt edilemez dusuk-y satirlar; iki-asama Bayes kaniti
 # reports/LOW_TAIL_LEVER.md) L2 egitiminde karesel gradyanla kutlenin fit'ini zehirliyor; Huber bunu
