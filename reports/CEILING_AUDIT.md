@@ -327,6 +327,30 @@ word/char (txt_ridge/txt_rich/txt_ridge_wc), e5 embedding, lexicon-10, 10 elle-f
 söz-dizimi + regex×skor — hepsi denendi; çıkarılabilir metin sinyali e5+txt_ridge'de doygun. Mentor metni
 belirsiz (aynı kelimeler her y'de), keskinlik yeni bilgi getirmiyor. Blend 84.0212 değişmedi.
 
+### Ek (kullanıcı önerisi) — Asimetrik/quantile loss (340 aşırı-tahmini dolaylı hedefle) → RED
+
+Kullanıcı "340'ı doğrudan hedefleyemiyorsak (y-siz ayırt edilemez — 4 kez kanıtlı) dolaylı yoldan"
+deyince asimetrik loss seçildi. **Gerekçe veriden:** 340'ın 189'u aşırı-tahmin (model yüksek dedi);
+rw-katkı aşırı 446K vs düşük 394K (%13 fazla). Asimetrik-Huber custom-obj (r=pred−y; r>0 overpredict
+çarpan 2(1−τ), r<0 çarpan 2τ; τ<0.5 → düşük-yanlı), τ∈{0.35..0.50}, init_score=fold-mean:
+
+| τ | repeat-0 rw | aşırı-tahmin (baz 189) |
+|---|---|---|
+| 0.50 (custom-obj simetrik baz) | 92.77 | 223 |
+| **0.45 (en iyi)** | **91.80** (custom-sym üzerine −0.97) | 204 |
+| 0.40 | 93.22 | 178 |
+| 0.35 | 94.05 | 149 |
+| — gerçek ht (dahili-huber, MUTLAK ref) | **86.63** | 189 |
+
+**RED — çift-katmanlı ders:** (1) Asimetri MEKANİZMASI çalışıyor: τ↓ → aşırı-tahmin monoton düşüyor
+(223→149) ve custom-obj-simetrik bazını τ=0.45'te −0.97 iyileştirdi — yani fikir teknik olarak işliyor.
+(2) AMA net RED: en iyi τ=0.45 (91.80) mutlak ht 86.63'ten +5.17 kötü. İki sebep: (a) custom-obj+
+init_score, LightGBM'in dahili boost_from_average huber'ini birebir üretemiyor (simetrik baz 92.77,
+kurulum sınırı); (b) ASIL mekanizma — model ZATEN dengeli (rw-ort resid +0.043); asimetri 189 aşırı-
+tahmini biraz kırpıyor (204) ama dengeli 9500 satırı sistematik kaydırıyor → çoğunluğa zarar > azınlık
+kazancı (τ≤0.40'ta net pozitif). **340'ı dolaylı hedeflemenin temel sınırı:** dolaylılık tüm popülasyona
+dokunur, dengeli %95'i bozar; Huber zaten optimal dengeyi bulmuş. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
