@@ -223,6 +223,25 @@ nnls) → L3=meta-of-meta (lineer-pozitif). nested:
 var-olmayan sinyali çıkaramaz; bilgi-seti 84.02'de tükenmiş, ekstra katman = overfit yüzeyi/gürültü.
 Blend 84.0212 değişmedi. Artefaktsız (Occam).
 
+### Ek (kullanıcı/arkadaş önerisi) — "kalan 56.87'yi düşür" 5 taktik: Log-Cosh + K-Means lokal → 2 RED (+3 zaten-kapalı)
+
+Bağlam: 340 kötü satır (|resid|>20, train'in %3.4'ü) toplam rw-MSE'nin **%35.2'sini** üretiyor; onlar
+SİLİNİRSE kalan 9660 satırın rw-MSE'si 56.87 (ort. hata 5.65, %53.9'u ±5 içinde). Öneri "o 56'yı düşür"
+idi — ama 56.87 SKOR DEĞİL (test'te o satırlar var, silinemez; gerçek skor 84.02). 5 öneriden 3'ü zaten
+kapalıydı: **stacking+Ridge = blend'in ta kendisi** (10 üye, ridge_pos meta); **feature interactions =**
+Faz-4 + 3.tur'da "kanıtlı zararlı" RED; **target transform (log1p/Yeo-Johnson) = mantık hatası**
+(log1p büyük-uçtaki 76-100 yığılmasını AÇMAZ, EZER; +Jensen bias; CLAUDE.md "log/logit YOK"). Kalan 2
+gerçekten yeni öneri fold-safe ölçüldü:
+
+| Aday | Ölçüm | Karar |
+|---|---|---|
+| **Log-Cosh loss** (lgbm_full_ht custom obj; loss=s²·log cosh(r/s), grad=s·tanh(r/s), hess=sech²; init_score=fold-mean — ilk koşu underfit'i init_score yokluğundandı, düzeltildi; scale∈{1,3,5}) | en iyi scale=5 repeat-0 rw **90.94** (+4.31 vs Huber 86.63) | **RED** — Log-Cosh ≈ Huber'in pürüzsüz akrabası; "küçük-hata ±5 pürüzsüzlüğü" tezi tutmadı çünkü o bölge zaten MSE-benzeriydi, belirleyici uç-satır dizginlemesi → keskin-eşikli Huber(α=5) yumuşak geçişi yeniyor |
+| **K-Means lokal modeller** (cluster-then-predict; tabular-uzayda fold-içi K-Means, her kümeye ayrı Huber GBDT uzman, <500 satır→global fallback; K∈{3,4}) | en iyi K=3 rw **90.47** (+3.84); K=4 91.77 | **RED** — (a) uzman başına ~%33 az veri → varyans; (b) küme yine feature'a dayalı, en-kötü satırlar (feature ayırt-edilemez, z~0) yanlış rejime düşüyor; global GBDT profil-bazlı ağırlığı ağaç dallarıyla zaten çözüyor. Hiyerarşik bin-routing (+4.68) emsali |
+
+**Sonuç:** "56.87'yi düşür" çerçevesi yanlış-kurgu — kalan satırlar zaten ~mükemmel (ort. 5.65), orada
+çekilecek sinyal yok; tavan o satırlardan değil, feature'dan öngörülemeyen %3.4 uç-satırdan geliyor.
+Her iki yeni taktik de eşiği geçemedi. Blend 84.0212 değişmedi. Artefaktsız (Occam).
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
