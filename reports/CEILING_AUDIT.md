@@ -373,6 +373,45 @@ her if-then kuralını (coding_score × internship_count split'leri) veriden OPT
 öğrendi; elle keyfi eşik (90, 0, −10) daha kötü ve global uygulanır → istisnaları da cezalandırır.
 Olgun GBDT'de elle kural her zaman redundant ya da zararlı. Blend 84.0212 değişmedi.
 
+### Ek (TAKIM ENTEGRASYONU) — arkadaş (ahmet branch) tekniklerini bizim CV'de süzme → 3 RED
+
+Kullanıcı arkadaşının çalışmasını (public 82.99 team_blend) entegre etmek istedi. ** courteam_oof (55/45
+karışım) bizim CV'de:** rw-OOF 83.56 (sayısal −0.46) AMA paired GEÇMEDİ (11/15, p=0.137, CI [−1.65,+0.66]
+sıfırı kapsıyor); ayrıca arkadaş `KFold(10,shuffle)` kullanmış (bizim RepeatedStratified-5×3 DEĞİL) →
+fold-hizasız, birebir kıyas geçersiz; team_blend 46-submission'dan public'te en iyisi = public-overfit
+şüphesi. Arkadaşın **gerçek model OOF'ları** branch'te yok (data/cache gitignore, GPU). Erişilebilir
+3 CPU-feasible tekniği bizim folds.parquet + nested paired-gate ile süzüldü:
+
+| Arkadaş tekniği | standalone rw | blend EKLE Δ | paired-gate |
+|---|---|---|---|
+| **segment-yıl TE** (rol/tier/hobby/sosyal × yıl, fold-içi sm=20) | 86.54 (+0.76 vs ht) | +0.018 | 5/15, p=0.37 → ELENDI |
+| **quant** (LGBM quantile q=0.35/0.5/0.65 ort) | 86.68 | +0.034 | 2/15, p=0.007 → ELENDI |
+| **catmae** (CatBoost MAE, full-15) | 87.15 | +0.0005 | 6/15, p=0.98 → ELENDI |
+
+**RED — neden arkadaşta işe yarayıp bizde yaramadı:** Arkadaşın v15 notu segment-TE'yi 89.94→88.53 kazanç
+diyor; bizde +0.018 ZARAR. Çünkü **bizim taban onunkinden güçlü** — yıllar ham feature + native-kategorik
++ e5 + huber zaten içeride; onun "kazanç"ları zayıf-tabanda kaçırılan sinyalin telafisi, bizim olgun
+taban onları zaten almış. quant/catmae GBM ailesi → catboost_full/huber ile yüksek korelasyon, ridge
+meta ~0 ağırlık verdi. Arkadaşın gerçek potansiyeli GPU-transformer'larında (BERTurk/mDeBERTa/XLM-R,
+e5'ten farklı) ama lokal GPU yok → koşulamadı. **Karar: public 82.99 tek-başına + fold-uyumsuz +
+public-overfit şüphesi → CLAUDE.md gereği SUB-2 84.02 (CV-doğrulanmış) KALIR.** Blend değişmedi.
+
+### Ek (kullanıcı önerisi) — Confidence-thresholded + binned pseudo-labeling → RED
+
+Klasik PL RED'i (+0.29) üzerine kullanıcı "en-emin (bariz) satırları pseudo-label, ayrıca tam-değer
+yerine binning (aralık)" önerdi. Güven = bizim 5 base test-pred std'si (y-siz). Fold-safe öğretmen
+(fold-train'den) → en-emin %K test pseudo-label → öğrenciye ağırlıkla ekle. repeat-0:
+
+| Varyant | en iyi delta vs 86.6303 |
+|---|---|
+| **tam-değer PL** (K∈{0.1,0.2,0.4}, w∈{0.3,1.0}) | **+0.17** (K=0.2,w=0.3) … +2.07 (en kötü) |
+| **binned PL** (kullanıcı fikri, bins=10/20) | +0.24 / +0.25 (tam-değerden DAHA kötü) |
+
+**RED — hepsi:** En-emin satırlar ZATEN doğru tahmin ediliyor → pseudo-label yeni bilgi getirmiyor,
+öğrenci kendi tahminini tekrar öğreniyor (distilasyon değil tautoloji). Binning kök-sorunu çözmüyor,
+kuantizasyon-kaybı ekliyor (tam-değerden kötü). "Az ve emin" sezgisi doğru yöndeydi (K=0.2,w=0.3 en
+hafif zarar) ama yetmedi: test aynı sentetik üreticiden, sömürülecek ekstra yapı yok. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
