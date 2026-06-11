@@ -351,6 +351,28 @@ tahmini biraz kırpıyor (204) ama dengeli 9500 satırı sistematik kaydırıyor
 kazancı (τ≤0.40'ta net pozitif). **340'ı dolaylı hedeflemenin temel sınırı:** dolaylılık tüm popülasyona
 dokunur, dengeli %95'i bozar; Huber zaten optimal dengeyi bulmuş. Blend 84.0212 değişmedi.
 
+### Ek (kullanıcı önerisi) — Kural-tabanlı post-process (feature aşırılığı → skor kaydır) → RED (tetik analizi)
+
+Kullanıcı "aşırı sinyal veriyorsa kuralla yaptır" deyince hard if-then kuralları (10-önerinin kural
+versiyonu) tetik-analiziyle test edildi: kural tetiklenen satırların ort residual'i (fold-safe blend_oof)
+popülasyondan farklı mı? Anlamlı = |sapma|>3 ∧ n>30.
+
+| Kural | n | ort resid | pop-dışı sapma |
+|---|---|---|---|
+| coding>90 & intern=0 | 242 | −0.16 | **−0.28 (≈0)** |
+| pq<40 & ti<40 (çift-zayıf) | 421 | +1.00 | +0.88 (≈0) |
+| coding>85 & pq<40 (uyumsuz) | 265 | +0.75 | +0.63 (≈0) |
+| cgpa>3.5 & intern=0 & ghr<2 | 37 | +2.28 | +2.16 (küçük-n gürültü) |
+| aşırı-övgü(≥4) & tech<50 | **0** | — | tetiklenmedi |
+| tech>85 & metin-kısa | 19 | −2.73 | −2.85 (küçük-n gürültü) |
+
+**RED (tetik analizi post-process'i gereksiz kıldı, segment-kalibrasyon emsali):** Büyük-n kuralların
+(242/421/265) sapması ≈0 → GBDT o satırları ZATEN doğru tahmin ediyor; kural uygulasak doğru tahminleri
+bozardık. Anlamlı-görünenler küçük-n (37, 19) = istatistiksel gürültü. **Mekanizma:** GBDT senin koyacağın
+her if-then kuralını (coding_score × internship_count split'leri) veriden OPTIMAL eşiklerle zaten
+öğrendi; elle keyfi eşik (90, 0, −10) daha kötü ve global uygulanır → istisnaları da cezalandırır.
+Olgun GBDT'de elle kural her zaman redundant ya da zararlı. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
