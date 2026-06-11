@@ -189,6 +189,40 @@ modaliteler/rejimler GERÇEKTEN ayrıksa kazanır; burada hedef sürekli-düzgü
 feature'larda zaten zayıf → classification, regresyonun işini kayıplı tekrar ediyor. Tek-aşama sürekli
 Huber, [0,100]'ü kesintisiz modelleyip belirsizlikte ortalamaya kaçıyor = MSE-optimal. Artefaktsız (Occam).
 
+### Ek (kullanıcı önerisi) — "Katmanlardan tek tek geçir": Residual zinciri + Derin stacking → 2 RED
+
+Kullanıcı fikri: saf-routing yerine satırı KATMANLARDAN sırayla geçir. İki meşru mimari ayrıştırıldı,
+ikisi de fold-safe ölçüldü (nested OOF; her katman bir öncekinin **OOF** residual'ini avlar → sızıntısız):
+
+**Mimari A — Residual zinciri (boosting-of-models):** L1=yapısal lgbm_num → L2 hedefi y−L1_OOF
+(metin-zengin) → L3 hedefi y−(L1+L2)_OOF (full Huber). repeat-0:
+
+| Adım | rw | ne oldu |
+|---|---|---|
+| L1 (yapısal) | 93.8465 | kasıtlı zayıf başlangıç (avlanacak residual olsun) |
+| +L2 (residual avla) | **88.9761** | **−4.87 GERÇEK kazanç** (metin sinyali residual'da vardı; zincir doğru kurulmuş) |
+| +L3 (kalan avla) | 88.9819 | **+0.006 KURU** (Sonda 1 residual-öğrenilemezlik emsali) |
+
+**RED** — L2 mekanizmayı kanıtladı (−4.87, sızıntı olsa sahte-büyük olurdu) AMA zincir tek-aşama
+lgbm_full_ht'yi (86.63) **2.35 geride** kaldı; L3 kuru. Sebep: GBDT zaten içsel residual-boosting
+makinesidir; modelleri elle katmanlara bölmek, birlikte-eğitilen tek modelin verimini bozar (katmanlar
+ardışık donar, birbirinin kapasitesini optimize edemez).
+
+**Mimari B — 3-katman derin stacking:** L1=10 taban model → L2=4 meta-varyant (ridge_pos α∈{0.2,1,5},
+nnls) → L3=meta-of-meta (lineer-pozitif). nested:
+
+| Katman | nested rw | not |
+|---|---|---|
+| L2 ridge_pos (mevcut blend) | 84.0212 | α=0.2/1/5 **birebir aynı** (buzme meta-çözümü değiştirmiyor) |
+| **L2 meta'ları arası min korelasyon** | **0.9988** | aynı P'den türüyorlar → kollinear |
+| L3 ridge_pos / nnls | 84.0981 / 84.0685 | **+0.077 / +0.047 (ikisi de kötü)** |
+
+**RED** — L2 meta'ları ρ=0.999 kollinear (aynı taban-matrisin lineer kombinasyonları, aynı uzayda) →
+3. katman yeni bilgi taşıyamaz, sadece gürültü ekler. Lineer-pozitif meta zaten optimal kapasitede
+(4. tur nonlineer-meta +1.86 overfit'inin hafif versiyonu). **Ortak ders:** mimari karmaşıklığı
+var-olmayan sinyali çıkaramaz; bilgi-seti 84.02'de tükenmiş, ekstra katman = overfit yüzeyi/gürültü.
+Blend 84.0212 değişmedi. Artefaktsız (Occam).
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
