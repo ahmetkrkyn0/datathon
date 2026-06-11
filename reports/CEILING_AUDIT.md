@@ -184,3 +184,18 @@ bilgileri mevcut üyelerden zaten alıyor — pass-through gate'i geçemiyor. SU
 **Blend 84.0991 artık HEM bilgi-seti HEM eğitim-mekanizması uzayında doğrulanmış tavandır.**
 Ampirik dış doğrulama da geldi: public LB 84.1709, gap +0.072 (=0.025σ) YEŞİL — rw-OOF metodolojisi
 gerçek dünyada 0.07 hassasiyetle kalibre. SUB-1 (catboost_full 86.41) + SUB-2 (blend 84.0991) FİNAL.
+
+
+## EK (4. tur öncesi) — UPSTREAM/VERİ-MANİPÜLASYONU kapısı (kullanıcı sorusu) → KAPALI
+
+**Yapısal gerçek:** GBDT'ler monoton feature-dönüşümlerine değişmez (log/scale/winsorize/rank → birebir
+aynı model) → "veri düzeltme" ailesinin büyük bölümü bu stack'te tanım gereği no-op.
+
+| Upstream probe | Ölçüm | Karar |
+|---|---|---|
+| Veri tutarlılık denetimi (aralık/mantık ihlali) | **0 ihlal** (negatif yok, >100 yok, interviews≤applications ✓, yıl ilişkileri ✓) | düzeltilecek şey YOK |
+| MNAR 0-impute (internship_duration NA→0) | rw 86.63→**86.78 (+0.15)** | RED — NaN-yönü esnekliğini öldürüyor |
+| Fold-median impute (7 NA kolonu) | rw 86.6268 (−0.003) | no-op — native NaN zaten kapsıyor |
+
+Satır temizliği (dup yok 4.8σ; outlier-atma→huber), etiket-düzeltme (soft-relabel), encoding'ler,
+metin ön-işleme: önceki turlarda ölçülüp kapatıldı. Upstream kapısı bütünüyle KAPALI.
