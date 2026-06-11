@@ -113,7 +113,45 @@ kanalı = recency-weight'in ambalajı (zaten ölçülüp başarısız); (b) dist
 probleminde confirmation-bias'a dönüşüyor (gerçek 8k etiket, öğretmenin kendinden-emin-hatalı 10k
 pseudo'suyla seyreltiliyor). Test aynı sentetik üreticiden → unlabeled'da sömürülecek ekstra yapı yok.
 
-## NİHAİ KARAR (2. tur sonrası)
+## 3. TUR — SİSTEMATİK ENVANTER TARAMASI (252 taktik → 24 denenmemiş → 14 ölçüm, 14 RED)
+
+Kullanıcının "plato deme, sistematik bul" yönlendirmesiyle 5-mercekli çok-ajanlı envanter çıkarıldı
+(Kaggle kazanan çözümleri, gürültülü-etiket, kovaryat-kayma, metin+tabular, taksonomi): **252 taktik
+toplandı**, denenmişler düşüldü → **24 denenmemiş** aday. Yüksek/orta-EV'lilerin tamamı ölçüldü
+(hepsi fold-safe; blend adayları paired-gate'ten):
+
+| Aday (ajan-EV) | Ölçüm | Karar |
+|---|---|---|
+| linear_tree (yüksek) | huber-üstü −0.06 / L2-üstü 0.00 | RED — lineer yapı zaten hasat edilmiş |
+| **Tabular Ridge — "en büyük envanter boşluğu"** (yüksek) | standalone rw 98.7; blend +0.085 | RED — lineer aile recency'de çöküyor |
+| XGBoost-L2 4. aile (yüksek) | standalone 87.63; blend ön-deneme **+0.032** | RED (HistGBR emsali doğrulandı) |
+| XGBoost-pseudohuber | rw 824 (bozuk; xgb base_score tuhaflığı) | RED, debug edilmedi |
+| Monotone constraints (orta) | +2.3 zarar | RED |
+| Meta: alpha grid (orta) | 0.03→30 tamamen düz | RED |
+| Meta: serbest-işaret ridge | nested −0.084 | RED (NM'in zayıfı) |
+| Meta: Nelder-Mead doğrudan rw-MSE | nested **−0.123 AMA paired 12/15, p=0.012, CI [−0.334,+0.093] sıfırı kapsar** | RED — meta-overfit; gate görevini yaptı |
+| kNN-target tabular-uzay (orta) | +0.25 | RED |
+| kNN-target **e5-uzayı** (orta) | standalone **−0.23 GERÇEK** (85.78→85.56 full-15) ama blend −0.060, paired 12/15 p=0.013 **CI [−0.141,+0.018] sıfırı kapsar** | RED — e5_ridge aynı bilgiyi taşıyor, pass-through yetersiz |
+| Null-importance feature selection (orta) | 46/62 feature düştü → reduced-set **çöktü** (92.93) | RED — korelasyonlu skorlar split-imp'i bölüşüyor; LGBM içsel seçimi yeterli |
+| Saf-tabular MLP (orta) | standalone 107.7; blend +0.003 | RED — mm'in değeri NN sınıfı değil METİN fine-tune'uymuş |
+| Soft-relabel distilasyon (orta) | a=0.85: +0.07, a=0.7: +0.43 (monoton kötü → optimum a=1) | RED — öğretmen-yumuşatma bias ekliyor, gürültüyü azaltmıyor |
+| Pseudo-labeling (önceki bölümde) | +0.29/+0.33 | RED |
+
+Ölçülmeden kapatılanlar: DAE (ön-koşul zayıf: 39/496 korelasyonlu çift + MLP'nin tam yenilgisi),
+2.tur Optuna (grid optimumu bulundu, blend-gate hiçbir üye-iyileştirmesini geçirmiyor → EV~0),
+düşük-EV listesi (rank-avg, TTA, HL-Gaussian, AutoGluon vb. — gerekçeler workflow çıktısında).
+AÇIK KALAN TEK ADAY: **TabPFN v2 (Colab GPU, notebooks/colab_tabpfn.py)** — ortogonal
+prior-fitted-transformer sınıfı; lokal CPU infeasible (16.9GB), kullanıcı koşusu bekliyor.
+NOT: xgboost/tabpfn pip kurulumları yalnız probe içindi; requirements.txt ve kanonik pipeline DEĞİŞMEDİ.
+
+## NİHAİ KARAR (3. tur sonrası)
+
+**Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter uzaylarının ÜÇÜNDE de
+doğrulanmış tavan.** Üye-düzeyi kazançlar hâlâ bulunabiliyor (kNN-e5 −0.23 gerçekti) ama blend bu
+bilgileri mevcut üyelerden zaten alıyor — pass-through gate'i geçemiyor. SUB-1 (catboost_full
+86.4149) + SUB-2 (blend 84.0212) FİNAL.
+
+## NİHAİ KARAR (2. tur sonrası — tarihçe)
 
 **Blend 84.0991 artık HEM bilgi-seti HEM eğitim-mekanizması uzayında doğrulanmış tavandır.**
 Ampirik dış doğrulama da geldi: public LB 84.1709, gap +0.072 (=0.025σ) YEŞİL — rw-OOF metodolojisi
