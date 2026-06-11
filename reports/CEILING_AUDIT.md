@@ -412,6 +412,25 @@ yerine binning (aralık)" önerdi. Güven = bizim 5 base test-pred std'si (y-siz
 kuantizasyon-kaybı ekliyor (tam-değerden kötü). "Az ve emin" sezgisi doğru yöndeydi (K=0.2,w=0.3 en
 hafif zarar) ama yetmedi: test aynı sentetik üreticiden, sömürülecek ekstra yapı yok. Blend 84.0212 değişmedi.
 
+### Ek (kullanıcı önerisi) — Data-oynamaları: feature-binning + mixup + hafif-budama → 3 RED
+
+Kullanıcı "data üzerinde başka ne yapılabilir" deyince 3 denenmemiş data-oynaması (lgbm_full_ht tabanı,
+repeat-0 fold-safe):
+
+| Teknik | repeat-0 delta | full-15 doğrulama | Karar |
+|---|---|---|---|
+| **A) feature-binning** (6 skor → 5-bin kategorik ek-feature) | −0.061 | (eşik-altı, gürültü-bandı) | RED |
+| **B) mixup** (x'=λxᵢ+(1−λ)xⱼ, y' aynı; λ~Beta(0.2)) | +0.347 | (kötüleşti) | RED |
+| **C) hafif-budama** (en düşük-imp 3 missing-flag çıkar) | **−0.190 (UMUT)** | **full-15 +0.067 (BUHARLAŞTI)**; blend İKAME 4/15 CI⊃0, EKLE 6/15 p=0.69 | RED |
+
+**RED — ve C `f_tshaped_std`'nin birebir ikizi:** budama repeat-0'da −0.19 ile en parlak göründü;
+full-15'te +0.067'ye döndü (3 missing-flag'in düşük-imp'i tek-repeat shuffle gürültüsü), blend-gate
+geçmedi. Repeat-0→full-15-gate disiplini bir kez daha gerçek-serap ayrımı yaptı. **Mekanizma (üçü):**
+GBDT zaten optimal binning yapıyor (açık-bin redundant); mixup'ın lineer-interpolasyonu sentetik-nonlineer
+hedefe uymuyor (sahte satırlar gürültü); düşük-imp feature çıkarmak (Occam) bu gürültü-seviyesinde gerçek
+kazanç vermiyor. Data-tarafı tüm müdahaleler (FE/temizleme/çoğaltma/encoding/budama) artık tüketildi.
+Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
