@@ -267,6 +267,27 @@ interactions zararlı" + 3.tur txt_rich/lexicon-redundans emsali). **Kullanıcı
 blend'e bak" sezgisi bu RED'i kurtardı** — repeat-0'a bakıp kabul etseydik gürültü kabul edilirdi.
 Blend 84.0212 değişmedi. Artefaktsız (Occam).
 
+### Ek (kullanıcı önerisi) — Kötü-tahmin TANISI + kanal-uyuşmazlığı ("çelişki") feature'ları → RED
+
+Kullanıcı `kotu_tahminler.csv`'yi (340 satır, |resid|>20, rw-MSE'nin %35.2'si) inceleyip "neden kötü,
+ex-ante flagleyip cezalandırabilir miyiz" diye sordu. **Tanı (gerçek veriden):** kötü satırlarda mentor
+metni SİSTEMATİK YANILTICI — metin-only model (txt_ridge) gerçeği **22.4 puan saptırıyor** (iyi satır
+9.1); örn. STU_005695 (y=0) "liderlik... önemli varlık", STU_000614 (y=45) "etkileyici güçlü aday".
+Y-SİZ aday flag bulundu: kanal-uyuşmazlığı |txt_ridge − blend| kötü **8.41** vs iyi **6.84**; "ancak/fakat"
+dönüşü %79.7 vs %67.4. Bu uyuşmazlık feature'a çevrildi (5 çelişki, hepsi y-siz/OOF-tahminden → fold-safe):
+
+| Çelişki feature | repeat-0 delta vs 86.6303 |
+|---|---|
+| d_txt_vs_num \| d_txt_vs_cat \| d_model_std \| d_txt_minus_num \| d_txt_minus_blend | **+1.90 … +2.79 (HEPSİ ZARARLI)**; TÜMÜ +1.99 |
+
+**RED (net, repeat-0'da bile) — istatistiksel serap dersi:** Tanı "kötü satırlarda uyuşmazlık biraz
+yüksek" dedi (8.41>6.84) AMA bu ≠ "uyuşmazlık kötülüğü tahmin eder". (a) dağılımlar örtüşüyor: yüksek
+uyuşmazlıklı satırların çoğu (9660 iyi vs 340 kötü) aslında iyi tahmin ediliyor → feature %95 yanlış-alarm;
+(b) feature modelin KENDİ girdilerinden türev (txt_ridge_pred + skorlar zaten matriste) → yeni bilgi yok,
+ama iki gürültülü tahminin farkı = daha gürültülü → split-kalitesini bozup zarar; (c) metin-yanıltıcılığı
+gerçek ama metin her satırda aynı pozitif şablonla yazılı → "yalan mı" sorusu ancak y bilinirse cevaplanır
+= sızıntı. Gözle "mantıklı, ekleyelim" yerine fold-safe ölçüm serabı yakaladı. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
