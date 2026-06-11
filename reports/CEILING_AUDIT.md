@@ -144,6 +144,34 @@ AÇIK KALAN TEK ADAY: **TabPFN v2 (Colab GPU, notebooks/colab_tabpfn.py)** — o
 prior-fitted-transformer sınıfı; lokal CPU infeasible (16.9GB), kullanıcı koşusu bekliyor.
 NOT: xgboost/tabpfn pip kurulumları yalnız probe içindi; requirements.txt ve kanonik pipeline DEĞİŞMEDİ.
 
+## 4. TUR — DÜŞÜK-EV KUYRUĞU SÜPÜRMESİ (envanteri SIFIRLAMA; 5 ölçüm + 1 doğrulama, 5 RED + 1 teyit)
+
+Kalan LOKAL-CPU kuyruğunun sistematik kapatılması. Amaç skor değil ENVANTER SIFIRLAMA
+("evren tarandı, denenmemiş kalmadı" = jüri kanıtı). Hepsi fold-safe; karar = nested rw-OOF +
+PAIRED-GATE (mm_gate deseni); public'e BAKILMADI. Bazlar: lgbm_full_ht repeat-0 rw **86.6303**
+(altyapı birebir yeniden üretildi), blend nested rw-OOF **84.0212**, ht full-15 rw **85.7810**.
+
+| Aday | Ölçüm | Karar |
+|---|---|---|
+| **1. HL-Gaussian / regresyon-sınıflandırma** (y→64 bin, fold-içi quantile + y=100 ayrı bin, LGBM multiclass num_class=64, tahmin=Σpᵢ·binₘₑᵣₖₑᵤ) | repeat-0 rw **98.8549 (+12.22)** | **RED** — sürekli hedefi kuantize etmek ağır bilgi kaybı + multiclass bin-başı varyansı; düzgün-sürekli hedefte regresyon-sınıflandırma yapısal olarak kaybeder |
+| **2. Sigma(x) + analitik E[clip]** (fold-safe σ(x) LGBM, hedef \|y−blend_oof\|; pred'=E[clip(N(μ,σ),0,100)] censored-normal kapalı-form; c·σ ölçek gridi) | en iyi c=0.5 **−0.0263**; PAIRED **13/15, t=−2.83, p=0.0135, CI [−0.067,+0.002] sıfırı KAPSIYOR** | **RED** — üç ölçütten ikisi geçmedi (p≥0.01, CI⊅0); ridge blend zaten clip-sonrası optimize, homoskedastik-gauss residual varsayımı %7.7 atom-kütleli hedefte tutmuyor; c<1 kazancı tesadüfi shrinkage |
+| **3. Frequency/count encoding** (5 kategoriğe fold-train frekans kolonu, lgbm_full_ht) | repeat-0 **−0.1309 (umut)** → full-15 standalone **−0.0123**; blend +freq PAIRED **6/15, t=−0.20, p=0.846, CI [−0.052,+0.047]** | **RED** — repeat-0 −0.13 SEÇİM-GÜRÜLTÜSÜ (full-15'te %90 buharlaştı); küçük kardinalite (4–11), LGBM native-kategorik frekansı zaten split-yapısında tutuyor. CLAUDE.md repeat-0→full-15-gate disiplininin ders-kitabı yakalaması |
+| **4. RBF-SVR mini-zoo** (tabular 82, fold-içi median-impute+StandardScaler, tam RBF-SVR 6.8s/fit; C∈{1,10,30}×γ∈{scale,0.01}) | en iyi (C=10,γ=0.01) rw **104.93** (grid 104.9–120.8); eşik ~92 | **RED (standalone)** — tabular-only SVR GBDT'ye (85.78) onlarca-MSE geride; saf-tabular MLP (107.7) yenilgisini yineler. mm'in değeri NN sınıfı DEĞİL metin fine-tune'uydu → blend ön-denemesine değmez |
+| **5. Booster.refit recent-slice** (lgbm_full_ht fold-modeli, refit decay∈{0.1..0.9} fold-train 2024-26 alt-dilimi, n=2610) | refit-yok kontrol 86.6303 (birebir); tüm decay KÖTÜ — en iyi decay=0.9 **+2.71** (89.34), decay=0.1 +15.19 | **RED** — recency-adaptasyon ailesi (sample-weight/year-weight/pseudo-label/refit) yine kaybetti; yaprak recency-dilime kayınca kütle-fit'i bozuluyor, test aynı sentetik üreticiden → kaydırılacak ekstra yapı yok |
+| **6. Forward-chaining cross-check** (SKOR DEĞİL, DOĞRULAMA; yıl≤2023 geçmiş / 2024-26 gelecek dilim, model EĞİTİLMEZ, mevcut OOF'lar) | **Spearman(gelecek-MSE, rw-OOF)=+0.964**, Spearman(geçmiş, rw-OOF)=+1.000, Spearman(geçmiş, gelecek)=+0.964 | **POZİTİF TEYİT** — rw-OOF sıralama-kararları bağımsız temporal split'te güçlü teyitli → karar metodolojisi recency-doğru, karar otoritesi sağlam (tek üye-rank gürültüsü catboost vs huber, zaten paired'de eşit) |
+
+ENVANTER DURUMU: 4. turla lokal-CPU düşük-EV kuyruğu KAPANDI. Açık kalan tek aday hâlâ
+**TabPFN v2 (Colab GPU)** — ortogonal prior-fitted-transformer; lokal CPU infeasible (16.9GB),
+kullanıcı koşusu bekliyor. Geçici probe scriptleri `src/_probe4_*.py` + artefaktları `_tmp_*`
+dokümantasyon sonrası temizlendi; kanonik pipeline / CANDIDATE_POOL / requirements.txt DEĞİŞMEDİ.
+
+## NİHAİ KARAR (4. tur sonrası)
+
+**Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
+uzaylarının DÖRDÜNDE de doğrulanmış tavan.** 4. tur ayrıca karar metodolojisini BAĞIMSIZ temporal
+split'le çapraz-doğruladı (Sonda 6: rw-OOF sıralaması recency-dilimle ρ=0.96 teyitli). Denenmemiş
+lokal-CPU taktiği kalmadı. SUB-1 (catboost_full 86.4149) + SUB-2 (blend 84.0212) FİNAL.
+
 ## NİHAİ KARAR (3. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter uzaylarının ÜÇÜNDE de
