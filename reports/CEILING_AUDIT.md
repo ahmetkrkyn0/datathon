@@ -479,6 +479,29 @@ kanıtı). GES: ridge_pos 10-modelde zaten MSE-optimal, GES'in discrete-seçimi 
 sansürlü-kütle yapısal modeli toplam-MSE'de huber-point'i geçemiyor (zaten yakınsamadı). **Probe paketleri
 (cleanlab 2.9.0, lightgbmlss) kuruldu ama requirements.txt + kanonik pipeline DEĞİŞMEDİ.** Blend 84.0212 değişmedi.
 
+### 7. TUR — REJECTED-BUNDLE testi (metodoloji-denetimi B-9 kapanışı) → ELENDI, gate aklandı
+
+Metodoloji denetimi şu endişeyi kaldırmıştı: paired-gate (12/15 & p<0.01 & CI<0) küçük-GERÇEK
+kazançları tek tek reddediyor olabilir; bırakılan kümülatif kazanç −0.2..−0.4 olabilir. **Tek
+ön-kayıtlı test:** tek tek gürültü-bandında olan adaylar gerçekse TOPLAMLARI net görünür olur.
+Ön-kayıtlı kriter (defterden, objektif): reddedilmiş üye-adayları arasında paired iyileşen≥11/15
+olanlar = **kNN-e5** (12/15, p=0.013) + **lgbm_num_h** (11/15, p=0.012). İkisi BİRLİKTE havuza:
+
+| Ölçüm | Değer |
+|---|---|
+| base blend → +bundle | 84.0212 → 83.9491 (**−0.072**) |
+| **paired (tek test)** | **11/15, t=−2.57, p=0.022, CI [−0.203,+0.056] sıfırı kapsıyor → ELENDI** |
+| tanı (tek tek) | +knn_e5 −0.019, +lgbm_num_h −0.070 |
+
+**SONUÇ — B-9 endişesi EMPİRİK kapandı:** bırakılan kümülatif kazanç ~−0.07 (tahmin edilen
+−0.2..−0.4 değil) ve o bile gürültüden ayırt edilemiyor. Gate'in sigorta primi sandığımızdan ucuzmuş;
+gate doğru çalışıyordu. Dürüstlük notları: (a) kNN-e5 yeniden-üretimi (artefakt 3.turda silinmişti;
+e5-uzayı kNN-target, k=50 gate-kör repeat-0 taramayla) 3.tur kurulumuyla birebir olmayabilir
+(katkı −0.019 vs eski −0.060) — ama bundle taşıyıcısı lgbm_num_h eski ölçümle tutarlı (−0.070) ve
+tek başına da CI'ı kapatamıyor; (b) güç-artırma (+3 repeat → 30 hücre) teknik olarak mümkün ama
+−0.07 deltası 30 hücrede de CI'ı kapatamaz (maliyet saatler, beklenen kazanç ~0) → yapılmadı.
+Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (6. tur sonrası)
 
 **Blend 84.0212; altı tur (bilgi-seti + eğitim-mekanizması + envanter + düşük-EV + takım-entegrasyonu +
