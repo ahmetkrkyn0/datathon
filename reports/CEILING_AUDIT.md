@@ -431,6 +431,30 @@ hedefe uymuyor (sahte satırlar gürültü); düşük-imp feature çıkarmak (Oc
 kazanç vermiyor. Data-tarafı tüm müdahaleler (FE/temizleme/çoğaltma/encoding/budama) artık tüketildi.
 Blend 84.0212 değişmedi.
 
+### 5. TUR — DEEP-RESEARCH (profil-eşi kazanan çözümler) → 2 yeni aday ölçüldü, 2 RED
+
+Cite-li deep-research (PetFinder/CommonLit/Feedback-ELL/ICR/Playground kazananları, bizim
+[0,100]-sansürlü + metin+tablo + sentetik + shift profiline eşlenmiş). Rapordaki tekniklerin ÇOĞU
+zaten denenmiş (embeddings→SVR=RED 104.93, pseudo-labeling=RED, 2-aşama-P×rank=RED p100, adv-validation
+=yıl analizi, importance-weighting=recency_weights, robust-loss=huber). **2 gerçekten denenmemiş +
+düşük-risk aday ölçüldü:**
+
+| Aday (kaynak) | Ölçüm | Karar |
+|---|---|---|
+| **PetFinder post-process** (Giba 1st: üst-clip + global çarpan ×1.032, MSE-shrinkage düzelt) | global çarpan tanı = **1.00060** (shrinkage YOK); nested: mult +0.014, clip −0.018 (9/15 p=0.13 CI⊃0), both −0.008 | RED |
+| **BCE-on-normalized-target** (PetFinder/PETS-SWINF: y/100, cross_entropy obj, sigmoid çıktı, MSE-validate) | leaves15 **+1.11**, leaves31 +2.07 vs huber 86.63 | RED |
+
+**RED — neden bu kazanan-teknikler bizde işe yaramadı:** (a) PetFinder post-process'in çekirdeği
+SVR'ın MSE-shrinkage kusurunu düzeltmek; bizim global optimal çarpan **1.0006** = blend ZATEN kalibre
+(ridge_pos + recency-weight), düzeltilecek bias yok (kalibrasyon-testi emsali). (b) BCE/sigmoid [0,1]
+sınırını respekt ediyor AMA sınır-dostu ≠ MSE-optimal; sigmoid-saturasyonu orta-yoğunlukta (76-90)
+çözünürlük kaybı, log-link additive-latent'e uymuyor (Tweedie/fractional-logit emsali). **Fizibıl-dışı
+adaylar:** snap-features (orijinal-veri gerektirir — bizde tamamen sentetik, altta public original yok);
+AWP + per-target attention-pooling + DeBERTa/BERTurk fine-tune (GPU gerektirir, lokal GPU yok — arkadaşın
+transformer'larıyla örtüşür). **Araştırma esas olarak mevcut yaklaşımı DOĞRULADI:** TF-IDF→meta-feature
+füzyon, iki-aşama, adv-validation, embedding+blend, importance-weighting hepsi kazanan çözümlerde var ve
+biz zaten kullanıyoruz/denedik. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
