@@ -455,6 +455,39 @@ transformer'larıyla örtüşür). **Araştırma esas olarak mevcut yaklaşımı
 füzyon, iki-aşama, adv-validation, embedding+blend, importance-weighting hepsi kazanan çözümlerde var ve
 biz zaten kullanıyoruz/denedik. Blend 84.0212 değişmedi.
 
+### 6. TUR — DEEP-RESEARCH v2 (negatif-prompt, denenmemiş + CPU-feasible) → 4 aday, 4 RED
+
+Negatif-prompt'lu cite-li araştırma (denenen ~25 taktik yasaklandı → sadece yeni/CPU-feasible).
+8 yeni aday önerildi; EV-sırasıyla en yüksek 4'ü ölçüldü (cleanlab/LightGBMLSS probe-only pip-kurulum,
+requirements.txt DOKUNULMADI):
+
+| Aday (kaynak) | Ölçüm | Karar |
+|---|---|---|
+| **Caruana GES** (greedy ensemble selection + bagging, MSE-doğrudan, Ridge/NNLS değil) | nested rw **84.82** vs ridge 84.02 (+0.80); paired 2/15 CI tamamen pozitif | RED |
+| **Generator-artifact features** (decimal-digit/value-freq/off-lattice; orijinal-veri gerektirmez) | TANI: skorlar düzgün 2-decimal, frac×100 düzgün 0-99 dağılmış → **lattice-izi YOK** | Fizibıl-dışı (artifact yok) |
+| **LightGBMLSS ZABeta** (zero-adjusted Beta dağılım-boosting; ==100→z=0 atom-kütle yapısal) | repeat-0 rw **257** (overflow, yakınsamadı; samples-E[z] de düzeltmedi) | RED — bu bütçede viable değil (kurtarma=HP-balıkçılığı) |
+| **cleanlab regression** (confident-learning surprise-row; ilk koşu A-feature −8.14 = **SIZINTI** [cl_quality y-tabanlı]) | **nested-fold-safe**: down-weight **+2.68**, quarantine **+0.36** | RED |
+
+**RED — ve cleanlab nested fold-safe DERSİ (kritik):** İlk koşuda down-weight −0.86 / feature −8.14 "iyi"
+göründü; bunlar cl_quality'nin y-tabanlı olmasından gelen SIZINTIYDI. **Nested-fold-safe yapınca (her dış-fold
+için cleanlab o foldun train'inde) iyileşme ZARARA döndü** (down-weight +2.68). İki ayrı katman: fold-safe
+ÖLÇÜM-dürüstlüğünü sağlar (sızıntı yok); ama dürüst ölçüm gerçeği gösterdi — surprise-row atmak/down-weight
+GENELLEMEZ, çünkü (a) test'te o satırlar VAR (train'den atmak test'ten silmez), (b) Huber zaten onları
+optimal dizginliyor, cleanlab'in ekstra down-weight'i üst-üste-düzeltme. cleanlab'in DEĞERİ tahmin değil
+TANI: bulduğu surprise-row'lar bizim 340 ile **%69.7 örtüştü** (model zaten doğru teşhis ediyor — jüri
+kanıtı). GES: ridge_pos 10-modelde zaten MSE-optimal, GES'in discrete-seçimi kaba. ZABeta: SLTB emsali —
+sansürlü-kütle yapısal modeli toplam-MSE'de huber-point'i geçemiyor (zaten yakınsamadı). **Probe paketleri
+(cleanlab 2.9.0, lightgbmlss) kuruldu ama requirements.txt + kanonik pipeline DEĞİŞMEDİ.** Blend 84.0212 değişmedi.
+
+## NİHAİ KARAR (6. tur sonrası)
+
+**Blend 84.0212; altı tur (bilgi-seti + eğitim-mekanizması + envanter + düşük-EV + takım-entegrasyonu +
+profil-eşi-araştırma) boyunca ~30 taktik ailesi fold-safe ölçüldü, hepsi RED.** Deep-research (2 tur)
+kazanan-çözüm tekniklerinin ya zaten kullanıldığını ya da bu olgun tabanda işe yaramadığını doğruladı.
+Lokal-CPU'da denenmemiş meşru taktik kalmadı. Tek açık yüksek-potansiyel: GPU-transformer'lar (BERTurk/
+mDeBERTa bizim folds ile, e5'ten ortogonal) — lokal GPU yok. SUB-1 (catboost_full 86.4149) + SUB-2
+(blend 84.0212) FİNAL.
+
 ## NİHAİ KARAR (4. tur sonrası)
 
 **Blend 84.0212; bilgi-seti + eğitim-mekanizması + sistematik-envanter + düşük-EV-kuyruğu
