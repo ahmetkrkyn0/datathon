@@ -111,7 +111,9 @@ for fold, va in enumerate(splits, 1):
     # year-norm hedef (fold-ici) + uniform agirlik
     st = pd.DataFrame({"yil": yr_tr[tri], "y": y_raw[tri]}).groupby("yil")["y"].agg(["mean", "std"])
     mu = pd.Series(yr_tr[tri]).map(st["mean"]).values; sd = pd.Series(yr_tr[tri]).map(st["std"]).values
-    yn = ((y_raw[tri] - mu) / sd).astype(np.float32)
+    # yn GLOBAL boyutlu (10000) — Dataset global indeks j ile eriser (enc_tr global).
+    yn = np.zeros(len(train), dtype=np.float32)
+    yn[tri] = ((y_raw[tri] - mu) / sd).astype(np.float32)
     mu_va = pd.Series(yr_tr[va]).map(st["mean"]).values; sd_va = pd.Series(yr_tr[va]).map(st["std"]).values
     mu_te = pd.Series(yr_te).map(st["mean"]).values; sd_te = pd.Series(yr_te).map(st["std"]).values
 
