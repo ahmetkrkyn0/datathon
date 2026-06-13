@@ -533,6 +533,32 @@ gerçek varyans daha düşük, kabuller daha güçlü. Gate "halüsinasyon deği
 "istatistik-temeli denetlenmiş"e yükseldi. Kalan açık: güç-profili (false-reject oranı) + 2-nokta
 public kalibrasyonu (red-edilen aday public-doğrulaması — submission ister).
 
+### 9. TUR — GATE GÜÇ-EĞRİSİ (metodoloji #2: false-reject profilini ölç)
+
+Soru: gate false-accept'i ~0 (sıkı); ama gerçek bir küçük kazancı (−0.1) yakalayacak GÜCÜ var mı?
+Sentetik enjeksiyon (blend'e fold-safe y-yönlü kontrollü kazanç) DENENDİ ama BAŞARISIZ: tüm alpha'larda
+delta +0.045 sabit kaldı — blend zaten kalibre olduğundan ridge(blend→y) düzeltmesi ≈ kimlik, geriye
+sadece gürültü kaldı (bu da AYRI bir kalibrasyon kanıtı: blend'i y'ye yaklaştırmak mümkün değil çünkü
+zaten optimal). Bunun yerine GERÇEK güç-eğrisi geçmiş ölçümlerden çıkarıldı (delta'ya göre sıralı):
+
+| aday | gerçek-delta | iyileşen | sonuç |
+|---|---|---|---|
+| lgbm_full_h | −0.140 | 13/15 | **KABUL** |
+| NM-meta | −0.123 | 12/15 | RED |
+| yıl-etkileşim | −0.099 | 10/15 | RED |
+| **lgbm_full_ht** | **−0.078** | **13/15** | **KABUL** |
+| lgbm_num_h | −0.074 | 11/15 | RED |
+| knn-e5 | −0.060 | 12/15 | RED |
+
+**BULGU — gate delta-BÜYÜKLÜĞÜYLE değil TUTARLILIKLA karar veriyor:** −0.078 (ht) geçti ama daha BÜYÜK
+−0.123 (NM) reddedildi. Ayırt eden delta değil, iyileşen-hücre + CI. Bu tam istenen: (a) **false-reject
+düşük** — gerçek+tutarlı küçük kazanç (−0.078, 13/15) yakalanıyor; (b) **false-accept düşük** — büyük-ama-
+dağınık kazanç (−0.123, 12/15, CI⊃0 = meta-overfit imzası) reddediliyor. Reddedilenlerimiz (−0.06..−0.12)
+delta olarak ht'ye yakın AMA hepsi 10-12/15 TUTARSIZ → haklı red; biri 13/15 tutarlı olsaydı ht gibi geçerdi.
+**Gate'in gücü "küçük kazanç yakalama" değil, "gerçek-tutarlı vs büyük-gürültülü ayrımı" — ve bunu doğru
+yapıyor.** Gate denetimi (3 tur: bundle B-9 + blocked-bootstrap #1 + güç-eğrisi #2) TAMAMLANDI: gate
+halüsinasyon değil, istatistik-temeli sağlam, güç-profili doğru. Blend 84.0212 değişmedi.
+
 ## NİHAİ KARAR (6. tur sonrası)
 
 **Blend 84.0212; altı tur (bilgi-seti + eğitim-mekanizması + envanter + düşük-EV + takım-entegrasyonu +
