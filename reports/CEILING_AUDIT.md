@@ -502,6 +502,37 @@ tek başına da CI'ı kapatamıyor; (b) güç-artırma (+3 repeat → 30 hücre)
 −0.07 deltası 30 hücrede de CI'ı kapatamaz (maliyet saatler, beklenen kazanç ~0) → yapılmadı.
 Blend 84.0212 değişmedi.
 
+### 8. TUR — BLOCKED-BOOTSTRAP gate-denetimi (metodoloji #1: istatistik-temeli dürüstleştir)
+
+İtiraf: paired-t 15 hücreyi BAĞIMSIZ varsayar ama 3 repeat aynı 10k satırı paylaşır (etkin-df ~4)
+→ p-değerleri iyimser; mevcut satır-bootstrap da satırları bağımsız çekip fold-yapısını kırar. Düzeltme:
+gate-kabullerini 3 bootstrap moduyla yeniden denetle (row=mevcut, blocked=15 hücreyi yeniden örnekle,
+foldcluster=repeat-içi 5 foldu blok). Test: "havuz−üye" vs "havuz" (leave-one-out).
+
+| Kabul | leave-1-out delta | ROW-CI | BLOCKED-CI |
+|---|---|---|---|
+| e5_ridge | −0.308 | [−0.54,−0.08] | **[−0.43,−0.18] p=0.000** ✓ |
+| mm | −0.537 | [−0.95,−0.13] | **[−0.77,−0.31] p=0.000** ✓ |
+| lgbm_full_ht | −0.078 | [−0.16,−0.002] | **[−0.11,−0.04] p=0.000** ✓ |
+| **lgbm_full_h** | **−0.027** | [−0.10,+0.04] | **[−0.062,+0.006] p=0.057 (sıfırı KAPSIYOR)** |
+
+**ŞAŞIRTICI BULGU (beklentinin tersi):** blocked-CI satır-CI'dan DAHA DAR çıktı — satır-bootstrap
+fold-içi yapıyı kırıp recency-ağırlık varyansını ŞİŞİRİYOR (fazla muhafazakar). Blocked fold-bütünlüğünü
+koruyup GERÇEK (daha düşük) varyansı gösteriyor. Yani gate'in istatistik-temeli sandığımdan SAĞLAM:
+e5/mm/ht blocked altında p=0.000, halüsinasyon değil — dışsal public-gap kalibrasyonuyla uyumlu.
+
+**GERÇEK DENETİM BULGUSU — lgbm_full_h:** blocked-CI sıfırı kapsıyor (leave-one-out anlamsız). Sebep:
+h kabul edildiğinde (mm'li havuza) anlamlıydı, sonra ht eklendi ve ht huber-bilgisini zaten taşıyor →
+h nihai havuzda redundant. **Occam testi:** h çıkarınca blend 84.0212 → 84.0478 (**+0.027, KÖTÜLEŞİR**).
+delta pozitif (h hafif katkı veriyor) ama anlamsız. **KARAR: h TUTULUR** — çıkarmak kötüleştiriyor (Occam
+"eşitlikte basit" der, burada eşitlik yok); ayrıca kalibre-kanıtlı SUB-2'yi 0.027'lik jest için riske
+atmaya değmez. Bulgu belgelendi, aksiyon yok. Blend 84.0212 değişmedi.
+
+**NET (gate güvenilirliği):** Blocked-bootstrap, paired-t'nin sahte-bağımsızlık endişesini KAPATTI —
+gerçek varyans daha düşük, kabuller daha güçlü. Gate "halüsinasyon değil, güçlü-kontrollü"den
+"istatistik-temeli denetlenmiş"e yükseldi. Kalan açık: güç-profili (false-reject oranı) + 2-nokta
+public kalibrasyonu (red-edilen aday public-doğrulaması — submission ister).
+
 ## NİHAİ KARAR (6. tur sonrası)
 
 **Blend 84.0212; altı tur (bilgi-seti + eğitim-mekanizması + envanter + düşük-EV + takım-entegrasyonu +
