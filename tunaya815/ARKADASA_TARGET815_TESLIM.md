@@ -1,5 +1,8 @@
 # TARGET 81.5 - Son Calisma ve Teslim Notu
 
+Bagimsiz test sonucu ve metodolojik sinirlar icin once
+`DOGRULAMA_RAPORU.md` dosyasini oku.
+
 ## Kisa Ozet
 
 Mevcut 12-model fold-hizali blend tabani:
