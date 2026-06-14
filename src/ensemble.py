@@ -41,7 +41,35 @@ CANDIDATE_POOL = [
     "mm",        # TIER-3 KABUL EDILDI (asagidaki MM nota bak) -> kalici blend uyesi.
     "lgbm_full_h",  # TIER-3 KABUL EDILDI (asagidaki HUBER nota bak) -> kalici blend uyesi.
     "lgbm_full_ht",  # TIER-3 KABUL EDILDI (asagidaki HT nota bak) -> kalici blend uyesi.
+    "xlmr",         # BIRLESME-T2 KABUL EDILDI (asagidaki XLMR nota bak) -> kalici blend uyesi.
+    "ourteam_tf",   # BIRLESME-T3 KABUL EDILDI (asagidaki OURTEAM_TF nota bak) -> kalici blend uyesi.
 ]
+# BIRLESME-T3 KABUL NOT (ourteam_tf): Ahmet'in TAM cozumu (lgbm+xgb+cat+mlp+nn NNLS blend), BIZIM
+# folds.parquet (RepeatedStratified 5x3) ile YENIDEN EGITILDI (ahmettengelenler/ourteam_oof_tunafolds.npy;
+# eski KFold-10 ourteam_oof DEGIL -> fold-hizasizlik COZULDU). HIZALAMA DOGRULANDI: y satir-bazli
+# OZDES + Ahmet'in application_year'i bizimkiyle %100 esit (satir sirasi tam hizali; src/
+# probe_ahmet_tunafolds.py). Eski KFold-10 GERCEKTEN iyimser-yanliymis: standalone rw 83.5577 ->
+# fold-hizali 84.2320 (+0.67 sisme; tunadeniz itirazi DOGRULANDI). AMA kazanc fold-artefakti DEGIL:
+# fold-hizali DURUST OOF'la BILE 11-model blend 83.6286 -> +ourteam_tf 82.2398 (delta -1.3888).
+# PAIRED-ANLAMLI (kendi gate'imiz, mm/e5/xlmr ile AYNI olcut): 15/15 hucre, t=-9.885, p=1.08e-7,
+# 5000-bootstrap %95 CI [-1.9358,-0.8391] (tamamen sifir-alti). Onceki RED (eski OOF, 11/15 p=0.137)
+# ARTIK GECERSIZ -> fold-hizalama farki. corr(ourteam_tf, xlmr)=0.823 / blend11=0.982 ama ORTOGONAL
+# katki net (Ahmet'in farkli model ailesi: lgbm/xgb/cat/mlp/nn + segment-yil TE + kohort-z FE).
+# team_blend_v2 public 82.3678 (eski sisik OOF'la bile gap +0.064 YESIL) bu kalibrasyonu ON-TEYIT etti.
+# SUB-1 (catboost_full) dokunulmaz. REPRO: ourteam_tf .npy KANONIK artefakt (Ahmet GPU/NN; belgelenmis
+# tolerans). Detay: BIRLESME_YOL_HARITASI.md §10.
+# BIRLESME-T2 KABUL NOT (xlmr): Ahmet'in en iyi metin modeli XLM-R-large TEXT-ONLY, BIZIM fold-safe
+# altyapida (folds.parquet repeat-0, 5-fit) sifirdan nested-OOF uretildi (colab_xlmr.ipynb; ham OOF
+# karistirma DEGIL -> fold-hizasizlik/winner's-curse YOK). standalone rw 140.72 (metin-tek; unw-CV
+# 126.07 = Ahmet gunlugu 126.1 ile birebir). ORTOGONAL: corr(mm)=0.780 / corr(e5)=0.883 /
+# corr(txt_ridge)=0.843 -> mm (kendisi de XLM-R) ile ayrisik cunku text-only (mm = text+tabular).
+# BLEND: 10-model 84.0212 -> +xlmr 83.6286 (delta -0.3925). PAIRED-ANLAMLI (src/xlmr_gate.py,
+# mm/e5 ile AYNI olcut): 13/15 hucre, t=-3.005, p=9.45e-3, 5000-bootstrap %95 CI [-0.7106,-0.0845]
+# (tamamen sifir-alti, P(delta>=0)=0.0066). lgbm_num_h emsali (11/15, CI sifiri kapsar) ile NET
+# AYRISIR -> KABUL. Literal 0.25*std (0.707) gecmez ama paired olcut esas (e5/mm ayni gerekce).
+# Birlesme yol haritasi Tier-1 (cohort-z/segment-TE/xgb) corr ~0.99 REDDEDILMISTI; XLM-R ilk gercek
+# kazanc (farkli fonksiyon sinifi + ortogonal metin). SUB-1 (catboost_full) dokunulmaz. REPRO: mm gibi
+# belgelenmis tolerans (neural/GPU). Detay: BIRLESME_YOL_HARITASI.md §8.
 # TIER-3 KABUL NOT (lgbm_full_ht): lgbm_full_h + SIKI regularizasyon (num_leaves=15, min_child=80;
 # src/lgbm_full_ht.py). ONCEDEN-KAYITLI 12-konfig HP gridinin (gate-kor, tek-yon degisimler,
 # repeat-0 fold-safe) tek anlamli kazanani; post-hoc kombinasyon YAPILMADI. Full-15'te curume yok

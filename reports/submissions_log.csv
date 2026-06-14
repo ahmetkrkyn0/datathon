@@ -1,4 +1,6 @@
 tarih,model_aciklama,commit_hash,cv_mse_mean,cv_mse_std,recency_weighted_oof_mse,public_lb_mse,gap,esik_durumu,test_uretim_yolu,secildi,not
 2026-06-10,lgbm_full,,77.033677,2.730661,87.266319,87.61,0.343681,yesil,fold-bagging (15 model),False,gap = public - rw_OOF (karar metrigi recency-weighted); |0.34| <= 1.5*std=4.10 -> recency kalibrasyonu LB ile teyit (saglikli)
-2026-06-11,catboost_full,,76.302545,2.688119,86.414935,,,,fold-bagging (15 model),True,SUB-1 (safe tek-model)
-2026-06-11,blend,0e46591,74.405455,2.828929,84.021154,84.13,0.1088,yesil,OOF-stack (recency-weighted),True,"SUB-2 (ensemble blend) | GAP-2: yeni blend (ht-li, rw 84.0212) public 84.13 -> gap +0.109 YESIL. Paired public-dogrulama: OOF beklenen -0.078, public gerceklesen -0.041 (ayni bant). rw kalibrasyonu 2. kez tuttu."
+2026-06-13,SUB-3 combinatorial (14-model+gating),,72.5,2.68,82.0164,82.1221,0.1057,yesil,14-model ridge_pos + xlmr-gating,True,"RISKLI: lgbm_num_h paired-marjinal (7/15,p=0.22) ama OOF+public ayni yon. public-en-iyi. SUB-3 aday."
+2026-06-14,combo14_gatemax (14-model + odunc-param gating zinciri),,72.72,2.66,81.9034,82.2241,0.3207,sari,14-model ridge + 5-asama gating (param 12-model OOF-sizintili),False,"SIZINTI DOGRULANDI: nested 81.90 SAHTE -> public 82.22 (gap +0.32, combinatorial gap +0.10un 3x). combinatorial 82.12 hala en iyi. KAPI HAKLIYMIS."
+2026-06-14,catboost_full,,76.302545,2.688119,86.414935,,,,fold-bagging (15 model),True,SUB-1 (safe tek-model)
+2026-06-14,blend,,72.822301,2.676371,82.239761,,,,OOF-stack (recency-weighted),True,SUB-2 (ensemble blend)

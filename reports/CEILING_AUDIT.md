@@ -602,3 +602,445 @@ aynı model) → "veri düzeltme" ailesinin büyük bölümü bu stack'te tanım
 
 Satır temizliği (dup yok 4.8σ; outlier-atma→huber), etiket-düzeltme (soft-relabel), encoding'ler,
 metin ön-işleme: önceki turlarda ölçülüp kapatıldı. Upstream kapısı bütünüyle KAPALI.
+
+---
+
+## KAPISIZ TAM TARAMA — overfit-kapisi KALDIRILMIS exhaustive aramanin sonucu (~40 teknik)
+
+> **Baglam:** Kullanici "overfit kapisini bos ver, 82.24/82.12 altina ne kadar inersek o kadar iyi"
+> dedi. Tum kabul kapilari (0.25*std, paired-test) KALDIRILDI; tek olcut "nested rw-OOF dustu mu".
+> Amac: kapinin GERCEKTEN gercek kazanci mi engelledigini yoksa gurultuyu mu eledigini test etmek.
+> **SONUC: kapi dogru calisiyormus. Kapisiz bile, GERCEK-nested olarak combinatorial 82.0164 ASILAMADI.**
+
+### Karar metrigi kalibrasyonu (bu turda olculdu)
+- combinatorial nested rw-OOF **82.0164** -> public **82.1221** (gap **+0.106**). rw-OOF private-durust;
+  public'i ~0.1 iyimser tahmin ediyor (saglikli, yesil bant). Public 81.9X icin nested ~81.85 gerekir.
+
+### Cephe 1 — Post-process zoo (11 metod, blend 82.24 uzerine, kapisiz)
+| Metod | nested delta | Karar |
+|---|---|---|
+| **xlmr confidence-gating** | **−0.044** | GERCEK (tek kazanc; public 82.24→82.11 kanitli) |
+| winsor (alt-kuyruk trim %0.25) | −0.002 | gurultu (mikroskobik) |
+| linscale/isoglobal/spline/binshrink/topgate/round100/gamma/multigate/bidirgate | 0 .. +0.43 | hepsi ELENDI (blend zaten kalibre; asagi-yon + cok-model gate ZARARLI) |
+
+### Cephe 2 — CPU-zoo (8 yeni ortogonal base, kapisiz)
+ExtraTrees/kNN-PCA/Ridge-poly/LGBM-quantile/CatBoost-derin/LGBM-DART/target-encode-GBDT/HistGBM-L1.
+**Hepsi RED.** Greedy z_catdepth'i sectiyse de tum-OOF ridge agirligi = **0.00000000**. 8 adayin tamami
+base'e corr **0.83–0.99** (hicbiri ortogonal degil). Saf CPU-tabular uzayi **doygun** — cekilecek yeni sinyal yok.
+
+### Cephe 3 — Reddedilenler dirilisi (eski "kapi gecmedi" adaylari, kapisiz, guncel tabanda)
+| Aday | eski delta (84.24 taban) | yeni delta (82.24 taban) | sonuc |
+|---|---|---|---|
+| Nelder-Mead meta | −0.123 | **+0.0007** | redundant olmus (L2 cezasi geneller) |
+| kNN-target e5 | −0.060 | +0.011 | redundant (e5_ridge zaten blend'de) |
+| ridge+P×yil | −0.099 | +0.000008 | redundant (xlmr/ourteam_tf yil-biasi yakaliyor) |
+| seed-bagging ×5 | −0.34 std | +0.0018 | redundant (lgbm_full_ht zaten blend'de) |
+| f_tshaped_std | repeat-0 −0.194 | −0.011 | mikroskobik kaldi |
+| Sigma-clip (censored-normal) | −0.026 | −0.0026 | mikroskobik kaldi |
+**Bulgu:** 84.24-tabanindaki "kacirilan kazanclar" GERCEK degil REDUNDANSIN giderilmesiydi — o sinyali
+sonradan daha iyi modeller (xlmr/ourteam_tf/e5) zaten aldi. **Kapi dogru elemis.**
+
+### Cephe 4 — Random-search (4000 tur, 8 DS taktigi: subset×NNLS/Dirichlet/power-mean/rank/trim/...)
+"En iyi 82.06" cikti AMA TESHIS: kirli `rv_ftshaped` artefaktindan (in-sample blend kopyasi, corr 0.9999)
+geliyordu = winner's-curse + kirli-OOF. Kirli artefakt havuzdan cikarildi (.INSAMPLE_KIRLI). Gercek kazanc YOK.
+
+### Cephe 5 — Gating-maxout (6 aile × yon × param-grid × cok-asama zincir, NESTED)
+En iyi GERCEK-nested zincir: `txt_ridge↑→xlmr↑→mm↓→xlmr↑→e5↑` = **blend_gatemax 82.0504** (−0.189 vs ham blend).
+**Yeni bulgu:** txt_ridge gate sinyali xlmr'den GUCLU (−0.098 vs −0.044 tek-hamle). Asagi-yon yine 0'a indi (teyit).
+81.5 ULASILMADI (raporun kendi notu): "gate tek-kaldirac blend'i ~82.0-82.1 bandina indirir; otesi daha guclu base gerektirir."
+
+### Cephe 6 — combo14 (14-model base + gating; en kritik)
+| Varyant | nested rw | tur |
+|---|---|---|
+| **combo14_gatemax** (odunc param, 12-model'den) | **81.9034** | ⚠️ HAFIF SIZINTILI (param o OOF'u gormustu) |
+| **combo14_agg** (in-sample agresif 12-asama) | **81.7746** | 🚨 IN-SAMPLE SAHTE (stage 7-12 saf gurultu-ezber) |
+| combo14_gateopt / basegate (bu-base-OZEL nested) | 82.0771 | ✅ GERCEK-nested (combinatorial'dan +0.06 kotu) |
+**Kritik ders:** 81.90/81.77 cazip ama GUVENILMEZ. Dürüst-nested (param hucre-disindan) yapinca **82.0771**'de
+duruyor. Aradaki 0.30 fark = saf overfit/sizinti. In-sample distance-kNN rw=0.0000 (ezber imzasi).
+
+### Cephe 7 — 99→100 snap (kullanici fikri)
+blend≥thr olanlari 100'e yuvarla. Her esikte rw YUKSELDI (thr=99: +0.008). Snap'lenen 350 satirin %89'u
+gercekten 100 ama %11'i (39 satir) degil; onlari 100'e itince MSE patliyor. RED (pp_round100/topgate ile tutarli).
+
+### Cephe 8 — Meta-hunt (6 GERCEK-nested meta-ogrenici ailesi, ridge_pos disi)
+| Meta | en iyi nested rw | combinatorial'a gore |
+|---|---|---|
+| mh_regularized (Lasso α=0.01) | 82.0786 | +0.062 (en yakin, GECEMEDI) |
+| mh_constrained (free WLS) | 82.1394 | +0.123 |
+| mh_segmented (yil-bazli) | 82.2739 | +0.258 |
+| mh_2layer (aile-stack) | 82.2953 | +0.279 |
+| mh_nonlinear (siki-reg GBDT-meta) | 83.0523 | +1.04 (overfit; in-sample 0.0 ezber) |
+| mh_blendfamily (power-mean) | 83.9272 | +1.91 |
+**ridge_pos zaten optimal meta.** Lasso/ElasticNet/Huber/WLS/non-linear/segment/2-layer — hicbiri gecemedi.
+
+## NIHAI KAPANIS (kapisiz tam tarama)
+~40 teknik, 8 cephe, overfit-kapisi KALDIRILMIS. **GERCEK-nested olarak combinatorial 82.0164 (public 82.12)
+ASILAMADI.** En yakin durust deneme 82.0504 (gating-maxout, +0.034). "Daha asagi" gorunen tek sayilar
+(81.90 sizinti / 81.77 in-sample) GUVENILMEZ ve public'te geri tepmesi beklenir. **Model+CPU uzayi tam doygun**
+(base 4 kez, gating 1, meta 1 ayri yoldan teyit). Tek acik kaldirac: GPU-transformer (TabPFN, ayri is).
+**Kapi dogru calisiyormus** — kapisiz bile gercek kazanc yok; kapinin eledigi her sey gercekten gurultuydu.
+
+---
+
+## GUVEN-SKORU CEPHESI — confidence-aware duzeltme (4 yontem, hepsi RED)
+
+> **Baglam:** Kullanici "her tahmine guven skoru ekleyelim, sonra dusuk-guven satirlarda manipulasyon/
+> AI ile residual ogrenip rw-OOF dusurelim" dedi. Guven skoru kuruldu + OOF-valide edildi (GUCLU);
+> uzerine 4 farkli duzeltme yontemi nested-test edildi. **Hepsi RED — residual ogrenilemez gurultu.**
+
+### Guven skoru (pred_sub_xlmr_gating.csv) — VALIDE, GUCLU
+`confidence = rank01(0.10*C1 + 0.90*C2)*100`. C1=model-anlasmasi(14 base std), C2=tahmin-bolgesi(rank01(pred)),
+C3=metin-GBDT-uyum (agirlik 0, yardim etmedi). **OOF validasyon: Spearman(conf,-|err|)=+0.290;
+en-yuksek-guven %10 OOF-MSE=17.25 vs en-dusuk %10=137.44 (8x ucurum).** Guven skoru GERCEKTEN calisiyor.
+Kok klasore pred_sub_xlmr_gating.csv yazildi (48 kolon: 46 test + pred + confidence) — JURI/ANALIZ icin degerli.
+
+### Bias teshisi (neden duzeltme calismaz)
+Guven-bandina gore bias (y-pred): dusuk-guven %10 bias=+0.37 ama |hata|=9.04; yuksek-guven %10 bias=+0.12 |hata|=2.38.
+**Bias minik (±0.37), hata buyuk (9+) = problem VARYANS, bias DEGIL.** Dusuk-guven satirlar ex-ante ayirt edilemez.
+
+### 4 duzeltme yontemi (hepsi NESTED, kapisiz, base xlmr-gating 82.1955)
+| Yontem | nested rw | sonuc |
+|---|---|---|
+| Toplu guven-bazli shift/shrink (probe_conf_correction) | 82.3395 (+0.144) | RED |
+| Esik-secici manipulasyon (7 esik × 7 kural, probe_conf_threshold) | 82.3406 (+0.145) | RED |
+| **AI residual-ogrenici TUM satir** (LGBM: feat+conf+std→resid, probe_resid_learner) | 82.1955 (delta 0, alpha=0) | RED |
+| **AI residual-ogrenici SADECE dusuk-guven** (%15/30/50) | 82.1955 (delta 0, alpha=0) | RED |
+
+### KRITIK kanit — residual OGRENILEMEZ
+AI residual-ogrenici: Spearman(pred_resid, gercek_resid) = **−0.037 (tum)** / **−0.079 (dusuk-guven)** → NEGATIF.
+Model residual'i feature'lardan tahmin EDEMIYOR; optimizer her varyantta alpha=0 ("ekleme") secti. residual std=8.53
+≈ forensics "iki ozdes ogrenci y'de 8.3 ayrisir" = INDIRGENEMEZ GURULTU, model hatasi degil.
+Esik-secici TANI: en iyi in-sample 82.1504 AMA nested 82.3406 (0.19 fark = saf overfit; nested yakaladi).
+
+**SONUC:** Guven skoru tahmin-guvenilirligini mukemmel olcuyor (8x ucurum) AMA dusuk-guven satirlar
+duzeltilemez cunku residual ogrenilebilir-yapi DEGIL gurultu. confidence-aware post-processing'in 4 formu
+(shift/threshold-rule/AI-learner-all/AI-learner-lowconf) nested'de RED. LOW_TAIL + noise-floor tezinin
+guven-ekseninde 4. dogrulamasi. Guven skoru JURI-ANALIZ degeri tasir; SKOR-duzeltme degeri YOK.
+
+---
+
+## 2026-06-14 (2): RAKIP-CALISMA + PSEUDO-LABELING — ilk GERCEK-nested kazanc
+
+### fezadangelenler (bagimsiz ekip) raporu — bizim TAVAN tezimizi DOGRULADI
+Bagimsiz ekip ayni problemde calismis (public ~82.9). Bizim her bulgumuzu teyit etti: tek-sinyal duvari
+(BERT+tabular corr 0.997), symbolic-reg formul-yok, dusuk-skor kuyrugu irreducible (decile-0 MSE 221),
+outlier yearW(=LB) +0.36 KOTU (covariate-shift), 14 Kaggle-writeup sentetik-kazanma 3 kosulu (orijinal-dataset/
+generator-artifact/AutoGluon) — UCU de kapali. AutoGluon onlarda null/redundant -> bizde de denenmedi (atlandi).
+Datathon-2024 kazanani (Anil Ozturk) cozumu+sunumu incelendi: CV 5.572->Public 5.856->Private 5.659
+(private public'ten IYI, CV'ye yakin) -> CV-otorite/public-kovalama-yok stratejimizin CANLI kanitı.
+
+### Pseudo-labeling (covariate-shift) — ILK gercek-nested 82.0164-alti aday
+fezadangelenler pseudo ile LB +0.63 atilim yapmis. Biz 3 pseudo varyanti + sentiment + catshap denedik:
+| Yontem | nested blend | overfit-gap | sonuc |
+|---|---|---|---|
+| **sp_pseudo_blend** (test'i test_blend ile etiketle, PW=0.7) | **81.7754** (-0.389) | +0.136 | GECTI (nuansli) |
+| sp_pseudo_cshift (fold-disi labeler, PW grid) | 82.2178 (+0.054) | dev | RED |
+| sp_sentiment (20 sablon-text kolon) | 82.2361 (+0.072) | +0.26 | RED |
+| sp_catshap (CatBoost SHAP-recursive select) | (40dk kosu, artefakt yok=gecmedi) | — | RED/yarim |
+
+**sp_pseudo_blend = bu oturumun TEK gercek-nested 82.0164-alti adayi.** Kanit: paired 15/15 hucre, t=-13.0,
+p=3.2e-9, bootstrap CI [-0.573,-0.201] tamamen sifir-alti (mm/e5/xlmr'den GUCLU); ridge agirlik 0.269 (yolcu degil);
+overfit-gap sadece +0.136; sizinti-denetimi temiz (pseudo-y test-satirindan, train-ortusme 0, valid hic gormedi,
+corr(y)=0.82 sahte-degil). Submission: sub_sp_pseudo_blend.csv (nested 81.7754).
+**NUANS (durust):** literal kapi (0.674) GECMEDI; corr~0.99 GBDT ailesiyle = ORTOGONAL yeni sinif DEGIL, blend'in
+KENDI ciktisindan turetilmis covariate-shift adaptasyonu. Public-testi SART (turetilmis-sinyal public'te tutabilir
+[fezadangelenler'de tuttu] VEYA combo14_gatemax gibi geri tepebilir [o param-sizintiliydi, bu degil; bu daha saglam]).
+KARSIT: sp_pseudo_cshift (gercek labeler) RED -> recency-weight covariate-shift'i zaten telafi ediyor; sadece
+blend-etiketli (kendine-referans) varyant tuttu -> public dogrulamasi kritik.
+
+### Bu oturumun TUM redleri (overfit-gap imzasi: in-sample iyi/nested kotu, her cephede +0.1-1.8)
+confidence-correction (11), CPU-zoo (8), EDA-FE (8), SMOTE/augment/extraction (9: jitter/mask/mixup/smote dahil),
+meta-hunt (6), gating-maxout (6), outlier (buharlasti), 99-snap, AutoGluon (redundant). ~55+ yontem.
+**Tek gecen: sp_pseudo_blend (pseudo-labeling).** combinatorial 82.12 + pseudo 81.78 = 2 gercek aday.
+
+---
+
+## OTURUM (2026-06-14, devam) — combo14_gatemax PUBLIC-TEYIDI + 6 yeni aci (A-F) + aci D
+
+### combo14_gatemax public olcumu GELDI -> tahmin DOGRULANDI
+Cephe-6'da "HAFIF SIZINTILI, public'te geri tepebilir" denen `combo14_gatemax` artik OLCULDU:
+**nested 81.9034 -> public 82.2241 (gap +0.3207, SARI).** Daha basit `combo14` (gating'siz):
+nested 82.0164 -> public **82.1221** (gap +0.106 YESIL). Yani gating zinciri nested-OOF'u
+0.11 "iyilestirdi" ama public'i 0.10 KOTULESTIRDI -> klasik in-sample/frozen-param sismesi.
+**En iyi GERCEK public hala combo14 = 82.1221.** Param-sizinti tezi deneysel kanitlandi.
+
+### Adversarial aday-denetimi (14 baseline-yakin artefakt; survived=0)
+Tum "81.7X-82.1X" artefaktlari nested-durustluk + adversarial cururtmeden gecirildi:
+- `combo14_agg` 81.77 = in-sample sahte (script kendi itiraf eder), `spbest` 81.78 = pseudo-turetilmis
+  literal-gate'ten gecmemis, `combo14_gatemax` 81.90 = frozen-param sizintili (public teyit etti).
+- Nested-durust olanlar (`metabest` 82.0165, `basegate`/`gateopt` 82.077, `gm_*` 82.12+) DURUST ama
+  baseline'i KIRMIYOR (`metabest` = combo14 ile ozdes nokta). **Havuzda public 82.12'yi kiran YOK.**
+
+### Kullanicinin 6 yeni acisi (A-F) — kesin denetim
+| Aci | Durum | Karar |
+|---|---|---|
+| A — LGBM cross_entropy/xentropy (y/100 fractional logit) | tam denenmis | RED (BCE-on-normalized +1.11/+2.07 MSE; log-link additive-latent'e uymuyor) |
+| B — Hill-climbing/Caruana greedy ensemble | tam denenmis | RED (greedy_nnls 82.4765 > ridge_pos 82.2398; soft-shrinkage daha robust) |
+| C — Post-cutoff CV (2024-26 tam holdout) | kismen denenmis | REDUNDANT (forward-chaining Spearman 0.964; recency-weight kaymayi zaten telafi eder) |
+| D — Kolon-bazli rank-transform blend input | YENI, test edildi | **RED (+3.26/+3.29 MSE, 0/15 hucre, CI tamamen pozitif; rank seviye-bilgisini atiyor -> MSE zarar)** |
+| E — classifier x regressor merge/hurdle (y=100 kutle) | tam denenmis | RED (two-stage Bayes-hurdle; bu BIREBIR denenmis varyant) |
+| F — Sentetik jeneratoru tersine muhendislik | kismen | REDUNDANT (deterministik yil-kilidi app=grad|grad+1 zaten kesfedildi; baska kural yok) |
+
+### Aci D detayi (src/probe_rank_blend.py) — NESTED-DURUST RED
+Baseline HAM-input ridge_pos = 82.2398 (birebir mevcut blend). Rank-transform (inverse-map ve raw,
+her ikisi nested + fold-safe): 85.50 / 85.53. Mekanizma: rank shift'e dayanikli AMA tahminlerin
+mutlak-seviye bilgisini siler; MSE-regresyonda bu bilgi kritik. mh_blendfamily power/geo/trim
+combiner'lari (83.9-85.1) ve z_lgbquant (+0.019 blend faydasi) ile TUTARLI: cikti-dagilimi
+manipulasyonu (rank/qmap/quantile/power-mean) bu problemde sistematik MSE-zararli.
+
+### Conformal / optimal-transport (prompt listesi) — MSE-faydasiz
+Conformal prediction GERCEKTEN denenmemis AMA point-MSE'yi DEGISTIRMEZ (interval uretir, nokta-tahmin ayni).
+Optimal-transport/distribution-matching = cikti-dagilimini test'e esleme = aci D'nin akrabasi (kanitli zarar).
+Ikisi de MSE metrigi icin yapisal olarak faydasiz -> test edilmedi (gerekce: D + mh_blendfamily + z_lgbquant kaniti).
+
+### KAPANIS (bu oturum)
+CPU/post-hoc/meta/loss/distribution uzayi DOGRULANMIS doygun. combo14_gatemax public-teyidi
+"81.X gorunen sayilar guvenilmez" tezini kanitladi. **Tek mesru kalan: GPU ortogonal fonksiyon
+sinifi** (BERTurk DOGRUDAN-hedef fine-tune + TabPFN-v2). Kod hazir: colab_berturk_fine.ipynb,
+colab_tabpfn.ipynb, src/new_model_gate.py (paired-test gate). Kullanici GPU'da calistirip .npy
+getirir -> nested paired-test + public-gap ile yargilanir.
+
+## OTURUM (2026-06-14, "bir sey bulacaksin" emri) — 6 EL-CEPHESI + 4 WORKFLOW-CEPHESI
+
+Yapisal analizden (y additive-dominant R2 0.57->0.62, sigma~8.7) cikan denenmemis catlaklar agresif kazildi.
+Karar metrigi nested rw-OOF (taban 82.2398). HER cephe gercek kod + nested protokol.
+
+### El-cepheleri (hepsi RED)
+| Cephe | yontem | sonuc | delta/R2 |
+|---|---|---|---|
+| Gec-yil hard meta-fit | meta SADECE grad>=2024 train ile (test-rejimi) | RED | +0.115 (recency sample-weight zaten daha iyi) |
+| Residual ~ base-tahmin nonlinear | HistGBR(base OOF) -> residual | RED | OOF-R2 -0.013, duzeltme +1.30 |
+| Residual ~ base pairwise farklar | HistGBR(66 base-cifti disagreement) | RED | OOF-R2 -0.003 (anlasmazlik=gurultu, sinyal degil) |
+| Spline-GAM additive base | SplineTransformer(5knot,deg3)+Ridge fold-ici | RED | standalone 103.79, corr(GBDT)0.94, blend +0.054 |
+
+**Ortak bulgu:** Tum base'ler gec-yilda esit oranda (~1.47x) bozuluyor -> kovariat-shift'e dayanikli
+ayri base YOK. Base-anlasmazligi residual TASIMIYOR (disagreement-gating ailesi RED'inin kok-nedeni).
+Spline-GAM/lineer additive yapiyi GBDT'lerle OZDES yakaliyor (corr 0.94-0.96) -> ortogonal degil.
+
+### TabPFN token-fix
+colab_tabpfn.ipynb -> tabpfn==2.0.9 (lisans kapisi YOK) + bagging varyanti (8 subset x 4k context).
+GPU'da calistir -> oof_tabpfn/tabpfn_full/tabpfn_bag.npy -> src/new_model_gate.py ile nested gate.
+Tek kalan ortogonal FONKSIYON SINIFI (yeni sinyal degil, farkli hata-dagilimi umudu).
+
+### Workflow-cepheleri (4, hepsi RED — winners=0)
+| Cephe | nested rw-OOF | delta | karar |
+|---|---|---|---|
+| Spesifik etkilesim taramasi (top-8 cift carpim/oran -> HistGBR base) | 82.2477 | +0.008 | gurultu bandi |
+| Gurultu-yapisi (row-z std/span, kategorik-ici sapma, yil-percentile) | 82.2398 | **0.000** | ridge 0-agirlik = blend zaten iceriyor |
+| Segment-uzman blend (blend-tahmin bandina gore ayri ridge_pos agirlik, nested) | 82.347 | +0.107 | kotulesti |
+| Kategorik recency-target-encoding (m=30 smooth) -> residual | 82.2398 | **0.000** | ridge 0-agirlik |
+
+Iki cephe TAM 0.000 delta (yeni feature ridge_pos'ta 0-agirlik) = blend her turevi zaten icermis.
+**Bu oturum 10 bagimsiz RED (6 el + 4 workflow), onceki ~57'nin ustune.** GBDT-blend'in kacirdigi
+ogrenilebilir sinyal YOK (matematiksel kesinlik). KARAR: combo14 public 82.122 bu bilgi-setinin tavani;
+finalizasyona gec. TabPFN lokalde GPU yok -> kapsam disi (notebook hazir ama calistirilmiyor).
+
+### Combinatorial-fonksiyon GENISLETME (kullanici: "combinatorial gibi fonksiyonlarla bir sey?")
+combinatorial = 14-model ridge_pos + tek xlmr-gating (nested 82.0164 -> public 82.122, gap +0.106 saglikli).
+Denenmemis varyantlar test edildi:
+| Varyant | sonuc | not |
+|---|---|---|
+| Backward elimination (14-model'den cikar) | hicbiri iyilestirmedi | 14-FULL (82.1640) optimal, model cikmaz |
+| Forward greedy (44-model HAM havuz) | 81.7442 KIRLI | turetilmis artefakt (gm_/sp_/pseudo) leakage = combo14_agg tuzagi; GECERSIZ |
+| Forward greedy (26 TEMIZ base, repeat-0 SEC) | 82.0778 | seçim-yanlilik suphesi |
+| ^ AYNI subset HELD-OUT (repeat 1,2 dogrula) | **82.1592** | **+0.081 SISME** = secim-yanliligi kaniti |
+
+**KESIN:** OOF'ta model-subset secmek = combo14_gatemax'in public-sismesinin AYNI mekanizmasi
+(repeat-0 82.08 cazip ama held-out 82.16'ya geri tepiyor). Hicbir subset/gating varyanti combinatorial
+82.0164'u GERCEKTEN (secim-yanlilik-disi) gecmiyor. **Combinatorial-fonksiyon ailesi de DOYGUN.**
+combinatorial 82.0164 (public 82.122) bu ailenin saglam tavanidir.
+
+### gate_up fonksiyonu TAM TARAMA (kullanici: "duz uzerine basit fonksiyon neydi")
+combinatorial'in "basit fonksiyonu" = gate_up: conf=|model-MU(76.94)|; mask=(conf>=q)&(model>MU);
+out=base+mask*a*(model-base). Yani uzman-model ortalamadan yeterince yukarda ise base'i o modele a-orani cek.
+Tek-gate NESTED tarama (her gate-model x yon, q,a hucre-disi optimize; base=14-model 82.1640):
+| gate-model | up | down |
+|---|---|---|
+| xlmr (combinatorial'in kullandigi) | -0.092 | +0.030 |
+| **e5_ridge** | **-0.114** (en iyi tek-gate) | +0.050 |
+| txt_ridge | -0.066 | -0.074 (cift-yon!) |
+| ourteam_tf | -0.040 | +0.028 |
+| mm | +0.043 | +0.057 |
+
+**Bulgu:** e5-up tek-gate (nested 82.0505) xlmr-up'tan (82.0717) iyi AMA combinatorial (82.0164) yine
+0.034 daha iyi (combinatorial = blend_metabest 82.0165 ile ozdes = optimize gating kombinasyonu, tek-gate
+degil). txt_ridge/e5_ridge base'de ridge_pos 0.0000 agirlik aliyor (metin lineer-redundant) AMA gate
+olarak bilgi katiyor (esik-bazli farkli mekanizma). Bidirectional (gm_bidir) zaten denenmis: 82.1752 (kotu).
+**gate_up ailesi DOYGUN:** tek-gate combinatorial-alti, cok-gate zinciri = combo14_gatemax (public 82.224 sisti).
+Combinatorial 82.0164 (public 82.122) bu fonksiyon-ailesinin saglam tavani.
+
+### KOMBINATORIYEL GATE-HARMAN (kullanici: "her seyi harmanla, tum gate-modelleriyle, kac cikar")
+14 gate-model x 2 yon x kombinatoriyel zincir, 3 strateji + adversarial sisme-testi (kanonik paired-bootstrap).
+| Strateji | full_nested_rw | gercek karar |
+|---|---|---|
+| greedy-zincir (6 gate) | 81.7432 | **CURUTULDU**: kanonik paired CI=[-0.613,+0.039] SIFIR KAPSAR; kazanc top-10 satirda %83 yogun, 1537 satir ZARAR -> combo14_gatemax imzasi (birkac yuksek-recency satir in-sample oturmus) |
+| top-k-bagimsiz (4 gate) | 81.7909 | **CURUTULDU**: "held-out" YANILTICI (ayni y'de olctu); DURUST satir-disjoint held-out = 82.0837 = combinatorial'dan +0.067 KOTU. 81.79->82.08 fark = saf grid-optimizasyon iyimserligi. 4 gate, tek e5-up'tan hicbir sey kazandirmiyor |
+| nested-tam-zincir | 82.2197 | combinatorial'i gecmedi (durust nested zaten kotu) |
+
+**KESIN KANIT (combo14_gatemax mekanizmasi):** Kombinatoriyel gate-zincir nested-OOF'u 81.74'e "indirir"
+AMA bu METRIK-OVERFIT: (q,a) gridi OOF-y gurultusune fit oluyor, kazanc birkac yuksek-agirlikli satirda
+yogun, cogunluk satir zarar goruyor. DURUST satir-disjoint held-out + kanonik paired-bootstrap CI ikisini
+de cururuttu (CI sifir kapsar, gercek deger combinatorial-ustu). Tek e5-up gate (durust 82.05) 4-6 gate
+zincirinden FARKSIZ -> ekstra gate'ler sadece gurultu ezberi. **gate-harman ailesi DOYGUN.**
+Combinatorial 82.0165 (public 82.122) HALA saglam tavan; kombinatoriyel genisletme onu GECMIYOR.
+
+### NEDEN cok-gate gap'i ASIRI sisirir (kullanici: "normalde 0.1 artiyordu, 81.79 neden asiri geciyor")
+4-gate zincir (81.7951) satir-satir kazanc analizi:
+- gate 2711 satiri degistirdi; NET kazanc 3688 (weighted-SE)
+- **EN COK kazandiran 10 satir = net'in %90'i; ilk 30 satir = net'in %156'si** (gerisi zarar)
+- ZARAR goren 1464 satir vs kazanan 1247; zarar -14552 / kazanc +18240 (ikisi devasa, fark kucuk-kirilgan)
+- kazandiran top-30 satir ort recency-w = **1.750** (genel 1.0) -> rw-metrigini orantisiz sisirir
+
+**MEKANIZMA:** Cok-gate (q,a) esiklerini OOF-y'ye fit eder; kazanc birkac (10) yuksek-recency-agirlikli
+satira YOGUNLASIR. Public'te o satirlar BASKA y -> ezberlenen esik uymaz -> kazanc coker, 1464-satir
+zarar kalir -> GAP PATLAR (+0.3+). Combinatorial tek-genis-gate (xlmr-up) kullanir: kazanc BINLERCE
+satira YAYILIR (dar degil) -> genellesir -> gap saglikli +0.1. KURAL: kazanc ne kadar AZ satira yogunsa
+gap o kadar siser. Bu, "cok-gate=overfit / combo14_gatemax public-sismesi"nin SAYISAL kok-nedenidir.
+
+### KAZANC-GENISLIGI KISITLI gate (kullanici: "daha spesifik / gate'i kisitla") -> gate-ailesinin MATEMATIKSEL KAPANISI
+Fikir (gap-analizinden): ezber=kazanc-yogunlasmasi; o halde (q,a) nested secimde "kazanc genis satira
+yayilsin (top-20 satir net-kazancin <esik kadarini tasisin)" kisiti koy, ezberi YAPISAL engelle.
+Sonuc (e5-up/xlmr-up/txt-up, conc esigi 0.15->1.0):
+- Kisitsiz (conc<1.0) bile tek-gate ~0 iyilestirme (e5-up +0.000, xlmr-up -0.003)
+- Kazanc-genisligi kisiti eklenince: TUM gate'lerde TAM 0.000 (hicbir kazanc kalmiyor)
+
+**MATEMATIKSEL KAPANIS:** Gate'in nested kazanci = %100 kazanc-yogunlasmasindan (ezber) geliyor.
+Yogunlasmayi yasaklayinca kazanc SIFIRLANIR -> GENELLESEN gate kazanci YOK. combinatorial'in 82.0165'i
+o GENIS tek-gate'in (xlmr-up) marjinal-yayilan payindan; cok-gate/yogun-gate sadece OOF-y ezberi.
+Bu, kullanicinin kazanc-genisligi fikriyle ulasilan gate-ailesinin KESIN kapanisi: combinatorial 82.0165
+(public 82.122) gate-fonksiyon uzayinin matematiksel tavani. Daha-spesifik/daha-genis hicbir gate onu gecmez.
+
+### mmstrong (arkadas artefakti, 2026-06-14 21:15) — incelendi, blende katildi -> ELENDI
+mmstrong_oof/test.npy (float32, 10k, clip[0,100], NaN yok). Standalone rw-OOF=90.4617 (mm 94.82'den IYI,
+arkadas mm'i guclendirmis). AMA ortogonal degil: corr(ourteam_tf)=0.976 (redundant!), corr(mm)=0.950,
+GBDT'lere ~0.95; sadece metin modellerine ortogonal (txt 0.73/e5 0.77/xlmr 0.84).
+Blend katki (new_model_gate.py, mm/e5/xlmr ile AYNI kanonik paired-test):
+| Katilma | blend rw-OOF | delta | karar |
+|---|---|---|---|
+| +EKLE | 82.2821 | +0.042 | paired 7/15, t=0.66, p=0.52, CI[-0.158,+0.251] sifir-kapsar -> ELENDI |
+| mm->mmstrong IKAME | 82.2274 | -0.012 | gurultu-bandi (0.25*std~0.75 alti), CLAUDE.md marjinal-RED |
+| ourteam_tf->mmstrong IKAME | 82.8982 | +0.659 | felaket |
+**ELENDI:** standalone guclu ama yeni ORTOGONAL sinyal yok (ourteam_tf corr 0.976 + mm corr 0.95 o sinyali
+zaten tasiyor). En iyi ikame -0.012 = gurultu. mm/e5/xlmr paired-testi GECMISTI (CI sifir-alti); mmstrong
+GECMEDI (CI sifir-kapsar, p=0.52). SUB-1/SUB-2 degismez. Artefakt dokuman icin tutuldu (oof/test_mmstrong.npy).
+
+### AGIRLIK OPTIMIZASYONU TAM TARAMA (kullanici: "agirliklari farkli sekilde optimize etsek")
+12-model blend meta-yontem taramasi (nested rw-OOF; mevcut ridge_pos a=1.0 = 82.2398):
+| Yontem | nested rw-OOF | not |
+|---|---|---|
+| ridge_pos a=0.1..30 | 82.2395-82.2398 | alpha DUYARSIZ (doygun) |
+| NNLS | 82.5291 | +0.29 (intercept yok) |
+| Lasso/ElasticNet pos | 82.2384/82.2385 | ~ayni |
+| Huber meta | 82.4457 | +0.21 kotu |
+| **BayesianRidge** | 82.1703 | -0.07 GORUNDU ama 3 NEGATIF agirlik (overfit); paired 9/15 p=0.073 CI[-0.24,+0.10] sifir-kapsar -> GECMEZ |
+| SLSQP simplex (pos,sum=1) | 82.5494 | +0.31 (intercept yasak, blend intercept=-4.99 onemli) |
+| **SLSQP direkt rw-MSE (pos+intercept)** | 82.2374 | ridge_pos ile OZDES (-0.0024 gurultu) |
+
+**KANIT:** Dogrudan rw-MSE'yi optimize eden SLSQP, ridge_pos ile AYNI noktaya variyor -> ridge_pos
+keyfi degil MATEMATIKSEL OPTIMAL. Tek "iyi gorunen" BayesianRidge negatif-agirlik overfit (positive
+kisit YOK -> in-sample gurultuye uyum, public'te siser); kanonik paired-test cururuttu. **Agirlik
+optimizasyon uzayi DOYGUN.** ridge_pos (positive, L2, intercept) optimal; meta-hunt 6-yontem RED'ini
+4 yeni yontemle (BayesianRidge/SLSQP x2/Huber) genisletip teyit eder.
+
+### Ahmet blend'ini ACMA (kullanici: "ourteam_tf 0.495 alti, icindeki alt-modellerle oynayalim")
+ahmettengelenler/ icinde Ahmet'in 5 alt-modeli AYRI mevcut (oof_lgbm/xgb/cat/mlp/nn, tunafold-hizali
+recon corr 0.9956). Kaliteler: lgbm 84.60 / xgb 85.65 / cat 86.24 / mlp 94.21 / nn 108.69. Hepsi
+ourteam_tf'ye 0.947-0.998 korele. ourteam_tf'yi acip alt-modelleri kendi ridge_pos'umuza AYRI kolon verdik:
+| Yaklasim | nested rw-OOF | delta |
+|---|---|---|
+| ourteam_tf BIRLESIK (mevcut) | 82.2398 | — |
+| ourteam_tf -> 5 alt-model AYRI | 82.3435 | +0.104 (RED) |
+| ourteam_tf + 5 alt-model HEPSI | 82.3162 | +0.076 (RED) |
+
+**RED, NEDEN:** Ahmet'in NNLS'i 5 alt-modeli ZATEN optimal birlestirmis (ourteam_tf=84.23). Acip kendi
+ridge'imizle yeniden birlestirmek: (1) cift-optimizasyon gurultusu (iki kez OOF-fit ust uste), (2) alt-modeller
+asiri korele (lgbm-xgb-cat hepsi GBDT) -> ridge multikolinearite, kararsiz agirlik, (3) Ahmet'in recency-aware
+NNLS'i bu alt-grup icin bizim ridge'den iyi kalibre. Iyi-paketlenmis bir ensemble'i parcalamak BOZUYOR.
+ourteam_tf BIRLESIK kalir. clip-disi (max 105-113) alt-modeller clip'lendi (yine de RED).
+
+### AHMET TARGET815 (meta 81.79 / robust 81.61 / aggressive 81.49) — INCELEME
+ahmettengelenler2/: Ahmet'in 12-model+fullft+ftt meta-stack + gate-zinciri. OOF'lar BIZIM metrikle
+BIREBIR tutuyor (aggressive 81.4884 = iddia; metrik dogru, ayni y/w/fold).
+| Aday | rw-OOF | Yontem | Bizim teshis |
+|---|---|---|---|
+| meta | 81.7886 | 12-model + fullft + ftt -> Ridge(a=0.01) | **SAGLIKLI gorunuyor**: std 12.57~blend 12.66 (varyans sismemis=negatif-agirlik overfit DEGIL), degisim %54 satira yayilmis (genis-yumusak, max 3.8) -> gercek fullft/ftt katkisi OLABILIR |
+| robust | 81.6124 | meta + 1 gate (fullft-up) | kismi-ezber |
+| aggressive | 81.4884 | meta + 3-gate (fullft-up,lgbm-down,mmstrong-up) | **EZBER IMZASI**: top-50 satir net kazancin %105'i, 4884 satir ZARAR (combo14_gatemax profili, bizimkinden yumusak) |
+**KRITIK BILINMEYEN: fullft (XLM-R full fine-tune) + ftt (FT-Transformer) BIZDE YOK + repeat-0-only**
+(Ahmet'in KENDI uyarisi: repeat-1,2 hizali degil -> meta-hucrelerde olasi leakage). meta -0.45'i gercek mi
+leakage mi, fullft'i 3-repeat uretmeden veya PUBLIC-GAP olcmeden kesinlesemez. mmstrong zaten test edildi
+(faydasiz, corr ourteam_tf 0.976). KARAR: meta-stack umut-verici (gate-DISI, genis, varyans-stabil = BERTurk'te
+aradigimiz XLM-R-fine-tune sinyali olabilir); aggressive gate-zinciri RISKLI (ezber). Submission RISK: meta
+> robust > aggressive (ezber-siralamasi ters). Public-gap olcumu sart.
+
+### BASKA TAKIM (bagimsiz) TABLOSU — CAPRAZ-DOGRULAMA (kullanici paylasti)
+Bagimsiz bir takim ayri calisip BIZIMLE BIREBIR ayni sonuclara varmis:
+A. POST-PROCESSING (6 teknik, hepsi onlarda da RED): variance-expansion 82.38 / quantile-match belirsiz /
+   mean-shift / weighted-median / power-mean / partial-clip -> hepsi baseline-alti. BIZIM RED'lerle 6/6 ortusur.
+B. BLEND: onlarin EN IYISI 'neg200 tek-basina 82.276'; blend/rank-avg HEP daha kotu. **BIZ ONLARDAN ILERIDEYIZ:**
+   combinatorial public 82.122 < onlarin 82.276. Bizim ensemble (ourteam_tf + Turkce-NLP ortogonalligi)
+   onlarin yapamadigi blend-kazancini cikarabilmis.
+C. MODEL: 'turkish-e5-large FINE-TUNE = TEK GERCEK SINYAL KAPISI (3-4 saat A100, deadline riski)'.
+   2-layer meta + XGB seed-bag -> bizde de RED (mh_2layer 82.295 / rv_seedbag).
+**UC BAGIMSIZ ISARET ayni yone:** (biz BERTurk-denedik-frozen-vardi) + (Ahmet fullft XLM-R-fine-tune) +
+(bu takim 'turkish-e5 fine-tune tek kapi') = KALAN TEK GERCEK KALDIRAC = Turkce transformer FULL FINE-TUNE
+(frozen degil). Bu, Ahmet'in fullft meta-stack'inin (81.79, varyans-stabil, genis) neden GERCEK olabilecegini
+guclendirir. ONCELIK: Ahmet'ten fullft+ftt'yi 3-repeat fold-safe iste -> leakage-safe dogrula.
+
+### meta tabanina combinatorial-gate (kullanici: "meta ustune combinatorial gibi uygulayalim") -> EZBER, RED
+Ahmet meta (81.79) tabanina tek-gate (nested, combinatorial deseni). En iyi: meta+e5-up = 81.6897 (-0.099).
+GORUNDU ama DURUST test cururuttu:
+- Kazanc-yayilimi: degisen 987 satir, top-10=net %196, top-50=%357 (ilk 10 satir net'in 2 kati = ASIRI yogun)
+- 568 satir ZARAR (degisen yarisi)
+- PAIRED: 10/15, t=-1.54, p=0.147, CI[-0.296,+0.074] SIFIR-KAPSAR -> KANONIK KAPI GECMEZ
+**KONTRAST:** meta-stack -0.45 = %54 satira GENIS+varyans-stabil (gercek model katkisi); meta+gate -0.10 =
+10 satira YOGUN ezber (combo14_gatemax imzasi). Gate-ekleme HER tabanda (blend de meta de) ezber. Ahmet'in
+robust/aggressive'i de meta-ustu-gate = ayni ezber. meta'nin DEGERI GATE-SIZ halinde (fullft gercekse).
+meta NEDEN iyilesti: kazanc orta-ust kutleden (56-95 bandi +0.76..+0.81), alt-kuyrukta KOTU (-2.08);
+fullft+ftt metin-yonlu ince-ama-gercek sinyal (corr(y-blend) +0.083, %50/%50 satir, net-pozitif).
+
+### "CORBA" testi (kullanici: "butun modellerle corba yapsak daha iner mi") -> HAYIR, kotulesir
+Mevcut 12-model 82.2398 -> TUM 25 temiz-base corba 82.3181 (+0.078 KOTU). 25 modelin 15'i ridge'de
+~0 agirlik (redundant). KANIT: iyilesme model-SAYISINDAN degil ORTOGONALLIKTEN gelir. Benzer model
+eklemek (GBDT/metin varyanti, mevcutlarla korele) = gurultu, kotulesir. Ahmet meta -0.45'i FARKLI cunku
+2 YENI FONKSIYON-SINIFI ekledi (fullft=XLM-R fine-tune, ftt=FT-Transformer) -> frozen'dan temelde farkli.
+**"81.79 ciktiysa daha gider" YANILGISI:** (1) 81.79 DOGRULANMADI (fullft repeat-0-only leakage olabilir,
+public 82.2'ye donebilir), (2) cok-model corba KOTULESTIRIR (kanit +0.078), (3) gercek kazanc tek
+DOGRU-ORTOGONAL modelden (fullft gibi). Yol: corba YAPMA; fullft+ftt'yi dogrula (leakage-safe) + tek
+gerçek-yeni ortogonal sinyal ekle. Combinatorial 82.122 hala saglam; meta 81.79 = umut AMA kanitlanmamis.
+
+### e5ft (kullanici: "frozen e5/txt'yi TEK fine-tune modelle ikame et") — uretildi, gate -> ELENDI
+colab_e5_fullft.ipynb -> e5-large DOGRUDAN-HEDEF full fine-tune (govde+head, repeat-0). Standalone rw-OOF
+142.90 = frozen e5 (158.46) ve txt_ridge (168.02)'den COK IYI (fine-tune CALISTI, xlmr-ft 140 seviyesi).
+AMA blende ELENDI: delta +0.015, paired 7/15, t=0.45, p=0.658, CI[-0.081,+0.114] sifir-kapsar.
+NEDEN: corr(e5ft, xlmr)=0.960 -> mevcut XLM-R fine-tune ile NEREDEYSE OZDES (ikisi de Turkce-transformer-
+fine-tune, ayni metni isler, ayni nis). e5ft'nin iyiligini xlmr ZATEN tasiyor. Frozen->fine-tune teknik
+basari ama yeni ORTOGONAL sinyal yok (xlmr doldurmus).
+**AHMET FULLFT ICIN UYARI:** fullft de XLM-R fine-tune -> muhtemelen corr(xlmr)~0.95+ -> meta 81.79'un bir
+kismi xlmr-redundant olabilir. Bu, meta'nin gerceklugune ek suphe (leakage + redundans). KESIN karar:
+fullft OOF/test'i al -> gate'siz paired-test (e5ft'yi test ettigim gibi). mm (birlikte fine-tune) zaten blendde.
+
+### fullft+ftt (Ahmet, OOF+test geldi) — BIZIM nested + gate ustu
+fullft (XLM-R fine-tune, standalone 146.39, corr xlmr 0.943) + ftt (FT-Transformer, 114.59, corr xlmr 0.66
+ORTOGONAL ama GBDT'lere 0.91-0.94). BIZIM 3-repeat nested ridge_pos:
+| Aday | nested rw-OOF | paired |
+|---|---|---|
+| 12-model base | 82.2398 | ref |
+| +fullft | 82.1482 | 11/15, p=0.18 |
+| +ftt | 82.2416 | ~0 |
+| **+fullft+ftt** | **82.1245** | 11/15, t=-1.54, **p=0.145, CI[-0.358,+0.132] sifir-kapsar -> GECMEZ** (gurultu-bandi, kil payi) |
+| +fullft+ftt +e5-up GATE | 82.0191 | 10/15, p=0.171, top-10=%216 net, 587 zarar -> **EZBER** |
+
+**KESIN:** fullft+ftt GERCEK yonde (-0.115) ama paired-test'i KIL PAYI kacirir (11/15 yerine 12 lazim,
+p 0.145; xlmr corr 0.943 -> metin nisi dolu). Ahmet meta 81.79 = bizim 82.12 + meta-feature ozetleri
+(mean/std/min/max) + positive-OLMAYAN Ridge ~0.33 sismesi (e5ft emsali). Gate ustu = EZBER (her tabanda;
+top-10 %216, public-siser). YENI DURUST NOKTA: 82.12 (gate-siz, fullft+ftt) — blend'den iyi, combinatorial
+82.0165'ten kil payi kotu, paired kil payi kacar. combinatorial 82.122 public HALA en saglam dogrulanmis.
+
+### GERCEK PUBLIC OLCUMU: fullft+ftt taban + e5-up gate = 82.0191 nested -> public 82.122074
+KULLANICI SUBMIT ETTI. gap +0.103 = combinatorial (+0.106) ile BIREBIR (saglikli, SISMEDI).
+**DUZELTME (kendi tahmimi):** "gate-yogunlasma (top-10 %216) -> siser" tahminim YANLIS cikti; bu gate
+SAGLIKLI geldi. Yogunlasma-metrigi bu durumda asiri-temkinli (yanlis-alarm). AMA: public 82.122074 =
+combinatorial 82.1221 ile BIREBIR AYNI -> yeni gate combinatorial'i GECMEDI, sadece ESITLEDI (nested de
+82.0191 vs 82.0164 kil-payi geride). fullft (yeni fine-tune sinyal) + ftt + gate bile 82.122 tavanini
+KIRAMADI. **82.122 = SAGLAM TAVAN (artik 2 bagimsiz yoldan public-dogrulandi: combinatorial + fullft-gate).**

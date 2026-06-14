@@ -33,26 +33,23 @@ import make_submission as ms
 #   - "blend_p100" : iki-asama post-process (LEVER2, elendi) — tek-model DEGIL
 #   - "txt_ridge*" : metin alt-modeli (zayif standalone; sadece blend bileseni)
 #   - "*_w"        : recency-weighted egitim varyanti (rw-OOF'u DUSURMEDI, elendi; bilerek SUB-1 disi)
-SUB1_EXCLUDE_PREFIXES = ("blend", "txt_ridge")
+# SUB-1 (CAPA/safe) = SADE, BAGIMSIZ, GUCLU, LB-DOGRULANMIS tek GBDT. Bu yuzden ALLOWLIST
+# (beyaz-liste) kullanilir: model_scores.csv'ye zamanla giren turetilmis/spekulatif artefaktlar
+# (gm_* gating, sp_* pseudo, cb_* correction, rv_* revival, pp_* postproc, z_* cpu-zoo, eda_* FE,
+# combo*/metabest/spbest/gatemax in-sample, mm/e5/xlmr/ourteam_tf neural-meta, histgbr/lgbm_num
+# zayif-tek) SUB-1'i KIRLETMEMELI. En guvenli kapi: yalniz kanitli-saglam GBDT base'lerine izin ver.
+# (Onceki blacklist eksikti: gm_stack2 gibi gating-turevini "safe tek-model" sandi -> bug. Bkz
+# reports/CEILING_AUDIT.md 2026-06-14 oturumu.)
+SUB1_ALLOWLIST = ("catboost_full", "lgbm_full", "lgbm_num")
 
 
 def _is_sub1_eligible(model: str) -> bool:
-    """SUB-1 (sade tek GBDT) adayligi: turetilmis/elenmis satirlari (blend*/txt_ridge*/*_w) ele."""
-    if model.startswith(SUB1_EXCLUDE_PREFIXES):
-        return False
-    if model.endswith("_w"):  # recency-weighted varyant (elendi; SUB-1 sade-unweighted olmali)
-        return False
-    if model.endswith(("_h", "_ht")):  # Huber varyantlari (lgbm_full_h / lgbm_full_ht / lgbm_num_h):
-        return False
-        # lgbm_full_h vs catboost: paired GURULTU (7/15, t=-0.44, p=0.67) -> esitlikte yapisal-farkli
-        # incumbent. lgbm_full_ht standalone daha dusuk (85.78 vs 86.41) AMA SUB-1'in AMACI sigorta:
-        # blend zaten lgbm-huber-agirlikli; SUB-1'in MAKSIMUM-BAGIMSIZ guclu aile (CatBoost ordered-
-        # boosting, bit-repro sicil, LB-dogrulanmis) kalmasi private %40 risk dagitiminin ozudur
-        # (CLAUDE.md: iki final YAPISAL farkli). Huber varyantlari SUB-2 blend uyesidir.
-        # Bkz reports/ROBUST_LOSS_LEVER.md.
-    if model in ("mm", "e5_ridge"):  # neural/embedding meta-feature: tek-model SUB-1 adayi degil
-        return False
-    return True
+    """SUB-1 (sade tek GBDT) adayligi: SADECE allowlist'teki kanitli-saglam bagimsiz GBDT base'leri.
+
+    Huber (_h/_ht) ve recency (_w) varyantlari SUB-2 blend uyesidir, SUB-1 disi (sade-unweighted L2
+    sigorta). catboost_full incumbent (CatBoost ordered-boosting, bit-repro, LB-dogrulanmis) =
+    private %40 risk dagitiminin ozu (CLAUDE.md iki-final-yapisal-farkli)."""
+    return model in SUB1_ALLOWLIST
 
 
 def _pick_from_ledger():

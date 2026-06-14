@@ -1,0 +1,6 @@
+config,nested_rw,insample_rw,overfit_gap
+fixed_3bins,82.481,81.8165,0.6646
+fixed_5bins,82.4848,81.5018,0.9831
+fixed_8bins,82.5686,81.1614,1.4073
+fixed_10bins,82.8857,81.0583,1.8274
+auto_bins(cift-nested),82.5031,,

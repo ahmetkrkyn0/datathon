@@ -21,3 +21,9 @@ models/
 .cache/huggingface/
 hf_cache/
 artifacts/_embed_run.log   # bert_embed.py gecici calistirma logu (commit edilmez)
+
+# Gecici calistirma loglari + deney ciktilari (commit edilmez)
+reports/_ag_run.log
+reports/_ag_tmp/
+_ag_tmp/
+data/cohort_z_*.parquet

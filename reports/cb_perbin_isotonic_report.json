@@ -1,0 +1,163 @@
+{
+  "method": "per-bin/per-year isotonic kalibrasyon (gate->y), NESTED, thin-cell GLOBAL fallback",
+  "base_gate_rw": 82.195451,
+  "best_nested_rw": 82.639061,
+  "best_config": {
+    "n_bands": 1,
+    "year_mode": "none",
+    "min_cell": 150
+  },
+  "delta_vs_base": 0.443611,
+  "insample_rw": 80.890251,
+  "overfit_gap_nested_minus_insample": 1.748811,
+  "unweighted_cv": 73.12238,
+  "unweighted_cv_std": 2.674461,
+  "beats_base": false,
+  "all_configs": [
+    {
+      "cfg": {
+        "n_bands": 1,
+        "year_mode": "none",
+        "min_cell": 150
+      },
+      "nested_rw": 82.639061
+    },
+    {
+      "cfg": {
+        "n_bands": 1,
+        "year_mode": "none",
+        "min_cell": 300
+      },
+      "nested_rw": 82.639061
+    },
+    {
+      "cfg": {
+        "n_bands": 1,
+        "year_mode": "recent",
+        "min_cell": 150
+      },
+      "nested_rw": 82.713098
+    },
+    {
+      "cfg": {
+        "n_bands": 1,
+        "year_mode": "recent",
+        "min_cell": 300
+      },
+      "nested_rw": 82.713098
+    },
+    {
+      "cfg": {
+        "n_bands": 1,
+        "year_mode": "each",
+        "min_cell": 150
+      },
+      "nested_rw": 83.692156
+    },
+    {
+      "cfg": {
+        "n_bands": 1,
+        "year_mode": "each",
+        "min_cell": 300
+      },
+      "nested_rw": 83.680056
+    },
+    {
+      "cfg": {
+        "n_bands": 3,
+        "year_mode": "none",
+        "min_cell": 150
+      },
+      "nested_rw": 82.761075
+    },
+    {
+      "cfg": {
+        "n_bands": 3,
+        "year_mode": "none",
+        "min_cell": 300
+      },
+      "nested_rw": 82.761075
+    },
+    {
+      "cfg": {
+        "n_bands": 3,
+        "year_mode": "recent",
+        "min_cell": 150
+      },
+      "nested_rw": 83.013222
+    },
+    {
+      "cfg": {
+        "n_bands": 3,
+        "year_mode": "recent",
+        "min_cell": 300
+      },
+      "nested_rw": 83.013222
+    },
+    {
+      "cfg": {
+        "n_bands": 3,
+        "year_mode": "each",
+        "min_cell": 150
+      },
+      "nested_rw": 84.369756
+    },
+    {
+      "cfg": {
+        "n_bands": 3,
+        "year_mode": "each",
+        "min_cell": 300
+      },
+      "nested_rw": 83.717235
+    },
+    {
+      "cfg": {
+        "n_bands": 5,
+        "year_mode": "none",
+        "min_cell": 150
+      },
+      "nested_rw": 82.71583
+    },
+    {
+      "cfg": {
+        "n_bands": 5,
+        "year_mode": "none",
+        "min_cell": 300
+      },
+      "nested_rw": 82.71583
+    },
+    {
+      "cfg": {
+        "n_bands": 5,
+        "year_mode": "recent",
+        "min_cell": 150
+      },
+      "nested_rw": 83.150722
+    },
+    {
+      "cfg": {
+        "n_bands": 5,
+        "year_mode": "recent",
+        "min_cell": 300
+      },
+      "nested_rw": 83.150722
+    },
+    {
+      "cfg": {
+        "n_bands": 5,
+        "year_mode": "each",
+        "min_cell": 150
+      },
+      "nested_rw": 84.628515
+    },
+    {
+      "cfg": {
+        "n_bands": 5,
+        "year_mode": "each",
+        "min_cell": 300
+      },
+      "nested_rw": 82.639061
+    }
+  ],
+  "note": "Conditional (band/yil) isotonic: global isotonic RED yedigi yerde band-bazli mis-kalibrasyon arandi. KARAR=NESTED rw; insample SADECE overfit-gap tanisi."
+}
