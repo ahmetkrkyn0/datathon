@@ -128,9 +128,8 @@ target815_aggressive_oof.npy
 src/build_target_815.py
 ```
 
-`src/build_target_815.py` yontem ve yeniden uretim referansi olarak pakete
-eklenmistir. Scripti calistirmak icin ana repodaki model OOF/test artefaktlari
-gereklidir. Ana repo kokunde:
+Paket gerekli OOF/test girdilerini de icerir ve ana repodan bagimsiz calisir.
+`tunaya815` klasor kokunde:
 
 ```powershell
 python -u src/build_target_815.py
@@ -143,6 +142,28 @@ meta       rw=81.78859
 robust     rw=81.61241
 aggressive rw=81.48840
 ```
+
+Bagimsiz aritmetik dogrulama:
+
+```powershell
+python -u verify_target815.py
+```
+
+Bu script uretim kodunu kullanmadan kayitli OOF dosyalarindan skor, fold
+sonuclari, bootstrap araligi ve submission semasini yeniden hesaplar.
+
+## Dogruluk Denetimi Sonucu
+
+- Dosya sirasi ve train/test ID hizasi dogrulandi.
+- Tum OOF dizileri 10.000 satir, sonlu ve `[0,100]` araliginda.
+- Aggressive skor bagimsiz hesapta tekrar **81.48840** cikti.
+- Aggressive aday repeat-0 kontrolunde 5/5 fold kazandi.
+- Satir-bootstrap delta %95 araligi sifirin altinda kaldi.
+- Alternatif `application_year` agirlikli proxy skoru **81.76465** cikti.
+
+Dolayisiyla dosya ve hesap dogru; fakat leaderboard icin 81.49 garanti degildir.
+Tarihsel public gap dikkate alindiginda gercek public skorun yaklasik 81.6
+cevresinde olmasi daha gercekci bir beklentidir.
 
 ## Kontroller
 
