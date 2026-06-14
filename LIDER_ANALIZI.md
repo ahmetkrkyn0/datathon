@@ -46,5 +46,26 @@ Modeli test'e ağırlıklandırmak veri azlığı yüzünden zarar veriyor.
 2. Erişimimizde olmayan veri/sızıntı (bulamadık, sistematik aradık).
 3. Daha iyi mimari (mümkün ama 12-model + tüm denemeler tavanı gösteriyor).
 
-**Karar:** 82.37 bizim dürüst tavanımız. SUB-1 (catboost_full sigorta) + SUB-2 (12-model) private'a
-karşı çeşitli. Public'in peşinden koşmak (winner's-curse) iki ekibin de reddettiği şey.
+## Feature-düzeyi birleşme (2026-06-13 17:00) — SON KAPI, kapandı
+
+Tuna'nın e5 SVD-50 + anchor 51-feature'ını bizim 178'le birleştirip 3 yoldan test:
+- Residual-fit (bizim+e5 etkileşim): R²=−0.02, düzeltme kazancı 0.0
+- Sadece e5: R²=−0.02
+- Sıfırdan model (bizim 178+e5, year-norm, 5×3): residual kor −0.015, nested +0.07 zarar
+
+Tuna'nın ön-testi (e5 residual corr −0.028) ile birebir. **Feature-düzeyi birleşme de tükendi.**
+
+## Bu oturumda denenen TÜM kaldıraçlar (14, hepsi sıkı testle)
+
+✅ Fold-hizalı OOF birleşme → LB 82.37 (TEK kazanç)
+❌ Full-FT XLM-R / quantile / regex / MLP / FT-Transformer (5 model ailesi, residual kor ~0)
+❌ Ağırlık-optimize / güven-ağırlıklı / post-process (shift/isotonic/piecewise)
+❌ Alt-kuyruk residual-fit / y==100 clip sömürüsü
+❌ Pseudo-labeling (DAİRESEL artefakt — held-out gerçekte −0.06)
+❌ Adversarial/recency eğitim ağırlığı
+❌ Feature-düzeyi birleşme (e5+anchor, 3 yol)
+❌ 8-yollu sızıntı araması
+
+**Karar:** 82.37 = iki ekibin BAĞIMSIZ doğruladığı gerçek tavan. SUB-1 (catboost_full sigorta) +
+SUB-2 (12-model) private'a karşı çeşitli. Lider 80.41: ya bizde olmayan veri (aradık, yok) ya
+public-overfit. Public'in peşinden koşmak (winner's-curse) iki ekibin de reddettiği şey.
