@@ -1,0 +1,93 @@
+{
+  "auc_with_years": 0.6658,
+  "auc_without_years": 0.5347,
+  "auc_without_years_numeric_only": 0.4942,
+  "classifier": "HistGradientBoostingClassifier(max_iter=200,max_depth=4,lr=0.05,rs=42)",
+  "cv": "StratifiedKFold(5, shuffle=True, random_state=42), cross_val_predict proba",
+  "categorical_encoding": "OrdinalEncoder (combined fit; adversarial-only, no leakage concern)",
+  "year_cols_excluded_in_without": [
+    "application_year",
+    "graduation_year"
+  ],
+  "top_features": [
+    {
+      "feature": "application_year",
+      "importance": 0.14546
+    },
+    {
+      "feature": "graduation_year",
+      "importance": 0.012274
+    },
+    {
+      "feature": "attendance_rate",
+      "importance": 0.003678
+    },
+    {
+      "feature": "english_exam_score",
+      "importance": 0.003539
+    },
+    {
+      "feature": "hr_interview_score",
+      "importance": 0.003495
+    },
+    {
+      "feature": "linkedin_profile_score",
+      "importance": 0.002148
+    },
+    {
+      "feature": "portfolio_score",
+      "importance": 0.00188
+    },
+    {
+      "feature": "cgpa",
+      "importance": 0.001869
+    },
+    {
+      "feature": "backend_score",
+      "importance": 0.001747
+    },
+    {
+      "feature": "teamwork_score",
+      "importance": 0.00168
+    },
+    {
+      "feature": "technical_interview_score",
+      "importance": 0.001521
+    },
+    {
+      "feature": "problem_solving_score",
+      "importance": 0.001426
+    }
+  ],
+  "finding_target_role_shift": {
+    "note": "SPEC referansi 0.4995 SADECE-SAYISAL olcumdur (bizimki 0.4942, PASS). Gercek feature uzayinda (num+kategorik, yil yok) AUC 0.5347; fark target_role train/test kaymasindan (yil drift'inin kategorik yansimasi). 0.535<0.55 -> GUVENLI; random stratified KFold gecerli. Faz 4 nihai matris ~0.53 beklemeli (tam 0.50 degil); target_role degerli, ATILMAZ; AUC>0.6 -> incele.",
+    "safe_zone_below_0_55": true,
+    "target_role_max_abs_pct_diff": 3.44,
+    "top_shifted_roles": [
+      {
+        "role": "AI Engineer",
+        "train_pct": 8.27,
+        "test_pct": 11.71,
+        "abs_diff": 3.44
+      },
+      {
+        "role": "Software Developer",
+        "train_pct": 15.72,
+        "test_pct": 12.75,
+        "abs_diff": 2.97
+      },
+      {
+        "role": "Frontend Developer",
+        "train_pct": 13.12,
+        "test_pct": 10.7,
+        "abs_diff": 2.42
+      },
+      {
+        "role": "Backend Developer",
+        "train_pct": 17.69,
+        "test_pct": 15.61,
+        "abs_diff": 2.08
+      }
+    ]
+  }
+}

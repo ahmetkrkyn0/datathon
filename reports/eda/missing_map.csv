@@ -1,0 +1,8 @@
+column,n_missing_train,pct_missing_train,n_missing_test,pct_missing_test,related_zero_col,pct_overall_related_zero,pct_na_with_related_zero,mnar_flag,note
+internship_duration_months,1657,16.57,1586,15.86,internship_count,30.7,82.1364,True,MNAR: NA ~ internship_count==0 -> 0+bayrak (Faz 3)
+english_exam_score,953,9.53,944,9.44,,,,False,
+github_avg_stars,910,9.1,895,8.95,github_repo_count,0.82,3.1868,False,
+open_source_contribution_count,910,9.1,895,8.95,github_repo_count,0.82,3.1868,False,"github_avg_stars ile ayni maske=True; %96.8 repo VAR -> medyan+bayrak, 0 DEGIL"
+hr_interview_score,780,7.8,759,7.59,interviews_attended,7.98,28.3333,False,
+linkedin_profile_score,668,6.68,680,6.8,,,,False,
+portfolio_score,364,3.64,382,3.82,,,,False,

@@ -1,0 +1,10 @@
+{
+  "near0_total": 838,
+  "near0_is100": 284,
+  "near0_interior": 548,
+  "wall_rw": 85.49445493657997,
+  "nested_iso_rw": 85.91598533577857,
+  "nested_iso_delta": 0.4215303991986019,
+  "gate": 84.73850418657997,
+  "iso_passes": false
+}

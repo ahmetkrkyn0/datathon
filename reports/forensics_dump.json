@@ -1,0 +1,52 @@
+{
+  "censoring": {
+    "n": 10000,
+    "n_eq_100": 773,
+    "n_eq_0": 1,
+    "max": 100.0,
+    "min": 0.0,
+    "on_001_grid": 10000,
+    "n_int": 856,
+    "gap_99_5_to_100": 47
+  },
+  "ols": {
+    "r2_all": 0.5771145384278351,
+    "resid_std_all": 9.875342998792606,
+    "r2_interior": 0.5206098884515,
+    "resid_std_interior": 9.766288209521168,
+    "top_coefs": {
+      "project_quality_score": 6.083777549806868,
+      "technical_interview_score": 3.8035389249667038,
+      "communication_score": 2.142541628483599,
+      "real_client_project_count": 1.8146188594043136,
+      "portfolio_score": 1.6963702646524392,
+      "github_repo_count": 1.2929034398007826,
+      "problem_solving_score": 1.20822316148793,
+      "teamwork_score": 1.1335407143998317,
+      "cloud_score": 1.0861809408736636,
+      "cv_quality_score": 1.009164656808636,
+      "cgpa": 1.0024471347522572,
+      "application_year": -0.881384712578554,
+      "failed_courses_count": -0.8299116837520631,
+      "devops_score": 0.8165291409581614,
+      "coding_score": 0.7963315826304256,
+      "internship_duration_months": 0.7846556423093751,
+      "presentation_score": 0.7551115604980909,
+      "hackathon_awards": 0.7305385154159774,
+      "hr_interview_score": 0.6856601448007902,
+      "backend_score": 0.6736175443729877,
+      "graduation_year": -0.6481761085463789,
+      "linkedin_profile_score": 0.6147281052154823,
+      "leadership_score": 0.4899535086284367,
+      "interviews_attended": 0.4632985625594383,
+      "english_exam_score": 0.36340741979900065
+    }
+  },
+  "noise_floor": {
+    "lgbm_oof_mse": 88.1573657807202,
+    "resid_std": 9.38921340057637,
+    "resid_mean_at_100": 6.227988030977578,
+    "resid_mean_interior": -0.556244127628092,
+    "resid_skew": -0.2690949383548714
+  }
+}

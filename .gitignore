@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .ipynb_checkpoints/
+
+# Sanal ortamlar
 .venv/
 venv/
 env/
@@ -22,3 +24,21 @@ Thumbs.db
 data/cache/
 
 copy/colab_finetune_embeddings.ipynb
+# Arac/edisyon onbellekleri
+.code-review-graph/
+.DS_Store
+
+# Claude Code oturum dosyalari (commit edilmez)
+.claude/
+
+# TIER-3 embedding modeli + HF cache (git'e COMMIT EDILMEZ; bert_embed.py kendi indirir)
+models/
+.cache/huggingface/
+hf_cache/
+artifacts/_embed_run.log   # bert_embed.py gecici calistirma logu (commit edilmez)
+
+# Gecici calistirma loglari + deney ciktilari (commit edilmez)
+reports/_ag_run.log
+reports/_ag_tmp/
+_ag_tmp/
+data/cohort_z_*.parquet

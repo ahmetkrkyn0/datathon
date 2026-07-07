@@ -1,0 +1,121 @@
+seed: 42
+anchor:
+  cv_mse_mean: 81.702394
+  cv_mse_std: 2.933211
+  locked_reference:
+    mean: 81.702394
+    std: 2.933211
+gate:
+  k: 0.25
+  threshold: 80.969091
+  rule: matris ancak cv < anchor - 0.25*anchor_std ise KABUL (duzen-bagimsiz; Occam)
+selected_matrix: anchor
+accepted_groups: []
+rejected_groups:
+- composites
+- composites+group_std
+- composites+interactions
+- composites+totals_ratio
+- composites+year_deriv
+- composites+log1p
+best_candidate:
+  name: composites
+  cv_mse_mean: 81.024366
+  cv_mse_std: 2.703238
+  delta_vs_anchor: -0.678028
+  gate_passed: false
+  derived_columns:
+  - tech_mean
+  - soft_mean
+  - interview_mean
+  - profile_mean
+  reeval_in: faz06 (NLP-augmented base)
+categorical_encoding: native
+final_cv:
+  cv_mse_mean: 81.702394
+  cv_mse_std: 2.933211
+  delta_vs_anchor: 0.0
+lgbm_feature_columns:
+- age
+- cgpa
+- english_exam_score
+- attendance_rate
+- failed_courses_count
+- coding_score
+- problem_solving_score
+- data_structures_score
+- sql_score
+- machine_learning_score
+- backend_score
+- frontend_score
+- cloud_score
+- devops_score
+- project_quality_score
+- real_client_project_count
+- internship_count
+- internship_duration_months
+- freelance_project_count
+- hackathon_count
+- hackathon_awards
+- portfolio_score
+- github_repo_count
+- github_avg_stars
+- open_source_contribution_count
+- linkedin_profile_score
+- cv_quality_score
+- technical_interview_score
+- hr_interview_score
+- communication_score
+- teamwork_score
+- leadership_score
+- presentation_score
+- certification_count
+- bootcamp_count
+- applications_sent
+- interviews_attended
+- application_year
+- graduation_year
+- internship_duration_months_missing
+- english_exam_score_missing
+- github_avg_stars_missing
+- open_source_contribution_count_missing
+- hr_interview_score_missing
+- linkedin_profile_score_missing
+- portfolio_score_missing
+- department
+- university_tier
+- target_role
+- hobby
+- preferred_social_media_platform
+categorical_columns:
+- department
+- university_tier
+- target_role
+- hobby
+- preferred_social_media_platform
+accepted_derived_columns: []
+log1p_for_linear:
+- github_avg_stars_log1p
+- open_source_contribution_count_log1p
+- github_repo_count_log1p
+derived_columns_all:
+- tech_mean
+- soft_mean
+- interview_mean
+- profile_mean
+- tech_std
+- soft_std
+- pq_x_tech
+- interview_x_tech
+- pq_x_soft
+- profile_x_interview
+- total_projects
+- total_credentials
+- interview_rate
+- years_since_graduation
+- github_avg_stars_log1p
+- open_source_contribution_count_log1p
+- github_repo_count_log1p
+adversarial_auc:
+  with_years: 0.6575
+  without_years: 0.5315
