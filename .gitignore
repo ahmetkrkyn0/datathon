@@ -9,6 +9,21 @@ __pycache__/
 venv/
 env/
 
+# Jupyter
+*.nbconvert.ipynb
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Geçici / büyük çıktılar
+*.log
+*.tmp
+data/cache/
+
+copy/colab_finetune_embeddings.ipynb
 # Arac/edisyon onbellekleri
 .code-review-graph/
 .DS_Store

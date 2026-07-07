@@ -1,0 +1,10 @@
+{
+  "bizim_11model_blend_rw": 83.6286,
+  "ourteam_tf_standalone_rw": 84.232,
+  "birlesik_12model_blend_rw": 82.2398,
+  "delta": -1.3888,
+  "paired": "15/15 hucre, t=-9.885, p=1.08e-7, bootstrap CI [-1.9358,-0.8391]",
+  "team_blend_v2_public": 82.3678,
+  "team_blend_v2_gap": 0.0639,
+  "not": "rw kendi graduation_year recency-weight ile; y satir-ozdes dogrulandi"
+}

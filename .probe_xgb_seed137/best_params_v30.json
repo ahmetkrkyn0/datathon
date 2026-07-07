@@ -1,0 +1,25 @@
+{
+  "lgbm": {
+    "params": {
+      "n_estimators": 1218,
+      "learning_rate": 0.012048591209354175,
+      "num_leaves": 31,
+      "min_child_samples": 28,
+      "subsample": 0.8974309903023555,
+      "colsample_bytree": 0.45120031707609703,
+      "reg_lambda": 5.819664466356801
+    },
+    "wmse_3fold": 88.28715344094317
+  },
+  "cat": {
+    "params": {
+      "iterations": 2398,
+      "learning_rate": 0.025690107668606507,
+      "depth": 5,
+      "l2_leaf_reg": 14.909539349270286,
+      "random_strength": 1.3032950127370597,
+      "bagging_temperature": 1.4276974940762515
+    },
+    "wmse_3fold": 88.25494969558483
+  }
+}
